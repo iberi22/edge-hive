@@ -48,11 +48,11 @@ pub struct DatabaseService {
 }
 
 impl DatabaseService {
-    /// Create a new database service with RocksDB backend
-    pub async fn new(path: &Path) -> Result<Self, DbError> {
-        info!("📦 Opening database at {:?}", path);
+    /// Create a new database service with in-memory backend
+    pub async fn new(_path: &Path) -> Result<Self, DbError> {
+        info!("📦 Opening in-memory database");
 
-        let db = Surreal::new::<Mem>()
+        let db = Surreal::new::<Mem>(())
             .await
             .map_err(|e| DbError::Connection(e.to_string()))?;
 
@@ -100,28 +100,9 @@ impl DatabaseService {
 
     /// Save or update a peer
     pub async fn save_peer(&self, peer: &StoredPeer) -> Result<(), DbError> {
-        self.db
-            .query("DELETE peer WHERE peer_id = $peer_id")
-            .bind(("peer_id", &peer.peer_id))
-            .await?;
-
-        self.db
-            .query(
-                r#"
-                CREATE peer CONTENT {
-                    peer_id: $peer_id,
-                    name: $name,
-                    addresses: $addresses,
-                    last_seen: $last_seen,
-                    capabilities: $capabilities
-                }
-                "#,
-            )
-            .bind(("peer_id", &peer.peer_id))
-            .bind(("name", &peer.name))
-            .bind(("addresses", &peer.addresses))
-            .bind(("last_seen", peer.last_seen))
-            .bind(("capabilities", peer.capabilities))
+        let _: Option<StoredPeer> = self.db
+            .create(("peer", peer.peer_id.as_str()))
+            .content(peer.clone())
             .await?;
 
         Ok(())
@@ -129,20 +110,14 @@ impl DatabaseService {
 
     /// Get all known peers
     pub async fn get_peers(&self) -> Result<Vec<StoredPeer>, DbError> {
-        let mut response = self.db.query("SELECT * FROM peer").await?;
-        let peers: Vec<StoredPeer> = response.take(0)?;
+        let peers: Vec<StoredPeer> = self.db.select("peer").await?;
         Ok(peers)
     }
 
     /// Get a peer by ID
     pub async fn get_peer(&self, peer_id: &str) -> Result<Option<StoredPeer>, DbError> {
-        let mut response = self.db
-            .query("SELECT * FROM peer WHERE peer_id = $peer_id")
-            .bind(("peer_id", peer_id))
-            .await?;
-
-        let peers: Vec<StoredPeer> = response.take(0)?;
-        Ok(peers.into_iter().next())
+        let peer: Option<StoredPeer> = self.db.select(("peer", peer_id)).await?;
+        Ok(peer)
     }
 
     /// Save a configuration value
@@ -150,15 +125,14 @@ impl DatabaseService {
         let json_value = serde_json::to_value(value)
             .map_err(|e| DbError::Serialization(e.to_string()))?;
 
-        self.db
-            .query("DELETE config WHERE key = $key")
-            .bind(("key", key))
-            .await?;
+        let config = StoredConfig {
+            key: key.to_string(),
+            value: json_value,
+        };
 
-        self.db
-            .query("CREATE config CONTENT { key: $key, value: $value }")
-            .bind(("key", key))
-            .bind(("value", json_value))
+        let _: Option<StoredConfig> = self.db
+            .create(("config", key))
+            .content(config)
             .await?;
 
         Ok(())
@@ -166,14 +140,11 @@ impl DatabaseService {
 
     /// Get a configuration value
     pub async fn get_config<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, DbError> {
-        let mut response = self.db
-            .query("SELECT value FROM config WHERE key = $key")
-            .bind(("key", key))
+        let config: Option<StoredConfig> = self.db
+            .select(("config", key))
             .await?;
 
-        let configs: Vec<StoredConfig> = response.take(0)?;
-
-        if let Some(config) = configs.into_iter().next() {
+        if let Some(config) = config {
             let value = serde_json::from_value(config.value)
                 .map_err(|e| DbError::Serialization(e.to_string()))?;
             Ok(Some(value))

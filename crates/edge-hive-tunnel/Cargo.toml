@@ -13,6 +13,16 @@ anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
+# Tor Hidden Services (Direct implementation)
+tor-hsservice = "0.20"
+tor-rtcompat = { version = "0.20", features = ["tokio"] }
+tor-hscrypto = "0.20"
+ed25519-consensus = "2"
+directories = "5.0"
+sha3 = "0.10"
+data-encoding = "2.6"
+rand = "0.8"
+
 # Cloudflare Tunnel (placeholder until libcfd is available)
 # libcfd = "0.1"
 

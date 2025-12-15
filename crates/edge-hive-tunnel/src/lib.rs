@@ -2,6 +2,8 @@
 //!
 //! Exposes local services to the internet via Cloudflare Tunnel or Tor onion services.
 
+pub mod tor;
+
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use thiserror::Error;

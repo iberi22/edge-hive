@@ -26,7 +26,7 @@ pub async fn run(args: InitArgs, data_dir: &Path) -> anyhow::Result<()> {
         println!("   Use --force to regenerate");
 
         // Load and show existing identity
-        let identity = NodeIdentity::load(&identity_path)?;
+        let identity = NodeIdentity::load(&identity_path, None)?;
         println!("\n📋 Current Identity:");
         println!("   Name:    {}", identity.name());
         println!("   Peer ID: {}", identity.peer_id());
@@ -45,7 +45,7 @@ pub async fn run(args: InitArgs, data_dir: &Path) -> anyhow::Result<()> {
     }
 
     // Save identity
-    identity.save(&identity_path)?;
+    identity.save(&identity_path, None)?;
 
     let public = identity.public_identity();
 

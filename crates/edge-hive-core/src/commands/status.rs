@@ -15,7 +15,7 @@ pub async fn run(_args: StatusArgs, data_dir: &Path) -> anyhow::Result<()> {
         bail!("Identity file not found. Run `edge-hive init` first.");
     }
 
-    let identity = NodeIdentity::load(&identity_path)?;
+    let identity = NodeIdentity::load(&identity_path, None)?;
     println!("Node Status:");
     println!("  Peer ID: {}", identity.peer_id());
     println!("  Name: {}", identity.name());

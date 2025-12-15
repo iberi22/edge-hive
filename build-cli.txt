@@ -1,0 +1,11 @@
+error: failed to load manifest for workspace member `E:\scripts-python\termux-private-edge-server\crates\edge-hive-core`
+referenced by workspace at `E:\scripts-python\termux-private-edge-server\Cargo.toml`
+
+Caused by:
+  failed to parse manifest at `E:\scripts-python\termux-private-edge-server\crates\edge-hive-core\Cargo.toml`
+
+Caused by:
+  error inheriting `edition` from workspace root manifest's `workspace.package.edition`
+
+Caused by:
+  `workspace.package.edition` was not defined

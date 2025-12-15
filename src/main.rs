@@ -101,7 +101,7 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
             }
 
             std::fs::create_dir_all(&identity_path.parent().unwrap())?;
-            identity.save(&identity_path)?;
+            identity.save(&identity_path, None)?;
 
             let public = identity.public_identity();
             println!("✅ Identity created successfully!");
@@ -115,11 +115,11 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
 
         IdentityCommands::Show => {
             if !identity_path.exists() {
-                error!("No identity found. Run: edge-hive identity new");
+                error!("No identity found. Create one with: edge-hive identity new");
                 std::process::exit(1);
             }
 
-            let identity = NodeIdentity::load(&identity_path)?;
+            let identity = NodeIdentity::load(&identity_path, None)?;
             let public = identity.public_identity();
 
             println!("Current Identity:");
@@ -133,7 +133,7 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
         IdentityCommands::List => {
             println!("🔑 Identities:");
             if identity_path.exists() {
-                let identity = NodeIdentity::load(&identity_path)?;
+                let identity = NodeIdentity::load(&identity_path, None)?;
                 println!("  • {} (current)", identity.name());
             } else {
                 println!("  (none found)");
@@ -152,7 +152,7 @@ fn handle_start(port: u16, _tor: bool, config_dir: &PathBuf) -> Result<()> {
         std::process::exit(1);
     }
 
-    let identity = NodeIdentity::load(&identity_path)?;
+    let identity = NodeIdentity::load(&identity_path, None)?;
     info!("Starting Edge Hive node: {}", identity.name());
     info!("Identity loaded: {}", identity.peer_id());
 

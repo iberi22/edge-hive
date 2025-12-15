@@ -34,11 +34,11 @@ pub async fn run(
 
     // Load identity
     let identity = if identity_path.exists() {
-        NodeIdentity::load(&identity_path)?
+        NodeIdentity::load(&identity_path, None)?
     } else {
         warn!("No identity found, generating new one...");
         let identity = NodeIdentity::generate()?;
-        identity.save(&identity_path)?;
+        identity.save(&identity_path, None)?;
         identity
     };
 

@@ -1,6 +1,6 @@
 //! Start the Edge Hive server
 
-use crate::server;
+use edge_hive_core::server;
 use edge_hive_discovery::DiscoveryService;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};

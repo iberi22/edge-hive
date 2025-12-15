@@ -3,7 +3,6 @@ use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use directories::ProjectDirs;
 
-mod server;
 mod config;
 pub mod commands {
     pub mod init;

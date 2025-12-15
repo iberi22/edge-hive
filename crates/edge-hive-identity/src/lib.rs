@@ -96,6 +96,11 @@ impl NodeIdentity {
         self.keypair.verifying_key()
     }
 
+    /// Get the secret key bytes (for libp2p integration)
+    pub fn secret_key_bytes(&self) -> [u8; 32] {
+        self.keypair.to_bytes()
+    }
+
     /// Sign a message
     pub fn sign(&self, message: &[u8]) -> Signature {
         self.keypair.sign(message)

@@ -5,7 +5,7 @@ use edge_hive_identity::NodeIdentity;
 use futures::StreamExt;
 use libp2p::{
     identify, identity, kad, mdns, noise,
-    swarm::{Swarm, SwarmEvent},
+    swarm::{NetworkBehaviour, Swarm, SwarmEvent},
     tcp, yamux, PeerId, SwarmBuilder,
 };
 use std::collections::HashSet;

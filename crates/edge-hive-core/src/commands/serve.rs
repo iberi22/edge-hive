@@ -3,13 +3,17 @@
 use edge_hive_core::server;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
+use edge_hive_discovery::DiscoveryService;
 use futures::StreamExt;
 use libp2p::{
     identify, identity, kad, mdns, noise,
-    swarm::{Swarm, SwarmEvent},
+    swarm::{NetworkBehaviour, Swarm, SwarmEvent},
     tcp, yamux, SwarmBuilder,
 };
 use std::path::Path;
+use std::sync::Arc;
+use std::collections::HashMap;
+use tokio::sync::RwLock;
 use tracing::{info, warn, debug};
 use clap::Args;
 
@@ -87,7 +91,7 @@ pub async fn run(
     println!();
 
     // Initialize discovery service
-    if args.discovery {
+    let discovery_svc = if args.discovery {
         info!("🔍 Starting discovery service...");
 
         let mut secret_bytes = identity.secret_key_bytes();
@@ -146,9 +150,14 @@ pub async fn run(
         });
 
         println!("✅ Discovery: Enabled (mDNS + DHT)");
+        
+        // Create discovery service
+        Arc::new(RwLock::new(DiscoveryService::new()?))
     } else {
         println!("⏸️  Discovery: Disabled");
-        None
+        
+        // Create discovery service anyway (required by server)
+        Arc::new(RwLock::new(DiscoveryService::new()?))
     };
 
     // Initialize tunnel service
@@ -178,8 +187,11 @@ pub async fn run(
     println!("Press Ctrl+C to stop");
     println!();
 
+    // Create message store
+    let message_store = Arc::new(RwLock::new(HashMap::new()));
+    
     // Run the HTTP server
-    server::run(args.port).await?;
+    server::run(args.port, discovery_svc, message_store, data_dir.to_path_buf()).await?;
 
     // Cleanup
     if let Some(mut t) = tunnel {

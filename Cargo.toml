@@ -95,7 +95,7 @@ rand = "0.8"
 blake3 = "1.5"  # Fast hashing for node IDs
 
 # P2P Networking
-libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
+libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux", "macros"] }
 
 # Tor Integration (Arti - Pure Rust Tor)
 arti-client = "0.20"

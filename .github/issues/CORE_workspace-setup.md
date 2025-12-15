@@ -4,7 +4,8 @@ labels:
   - core
   - rust
   - priority-high
-assignees: []
+assignees:
+  - jules
 ---
 
 ## User Story

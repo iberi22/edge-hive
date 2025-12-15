@@ -4,7 +4,8 @@ labels:
   - networking
   - p2p
   - priority-high
-assignees: []
+assignees:
+  - jules
 ---
 
 ## User Story

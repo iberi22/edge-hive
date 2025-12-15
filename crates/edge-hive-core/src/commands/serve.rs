@@ -23,6 +23,10 @@ pub struct ServeArgs {
     /// Enable discovery service
     #[arg(long)]
     pub discovery: bool,
+
+    /// Enable Tor onion service
+    #[arg(long)]
+    pub tor: bool,
 }
 
 /// Run the serve command
@@ -86,6 +90,36 @@ pub async fn run(
         }
     } else {
         println!("⏸️  Tunnel: Disabled (use --tunnel to enable)");
+        None
+    };
+
+    // Initialize Tor onion service
+    let tor_service = if args.tor {
+        info!("🧅 Starting Tor onion service...");
+        
+        // Import Tor module
+        use edge_hive_tunnel::tor::{TorConfig, TorNode};
+
+        let tor_config = TorConfig::default()
+            .map_err(|e| anyhow::anyhow!("Failed to create Tor config: {}", e))?
+            .with_data_dir(data_dir.join("tor"))
+            .with_local_port(args.port);
+
+        let mut tor_node = TorNode::new(tor_config);
+        
+        match tor_node.start().await {
+            Ok(onion_addr) => {
+                println!("✅ Tor: http://{}.onion", onion_addr);
+                Some(tor_node)
+            }
+            Err(e) => {
+                warn!("Failed to start Tor: {}", e);
+                println!("⚠️  Tor: Failed ({})", e);
+                None
+            }
+        }
+    } else {
+        println!("⏸️  Tor: Disabled (use --tor to enable)");
         None
     };
 

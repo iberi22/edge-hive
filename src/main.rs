@@ -8,6 +8,19 @@ use edge_hive_identity::NodeIdentity;
 use std::path::PathBuf;
 use tracing::{info, error};
 use tracing_subscriber;
+use edge_hive_core::server;
+use edge_hive_discovery::{DiscoveryService, PeerInfo};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use std::collections::HashMap;
+use reqwest;
+use std::fs;
+use libp2p::{PeerId, identity, Multiaddr};
+use libp2p::futures::StreamExt;
+use libp2p::kad::{Config, store::MemoryStore};
+use libp2p::multiaddr::Protocol;
+use std::convert::TryFrom;
+
 
 #[derive(Parser)]
 #[command(name = "edge-hive")]
@@ -42,10 +55,25 @@ enum Commands {
         /// Enable Tor onion service
         #[arg(long)]
         tor: bool,
+
+        /// Enable discovery service
+        #[arg(long)]
+        discovery: bool,
+
+        /// Bootstrap peer address
+        #[arg(long)]
+        bootstrap_peer: Option<String>,
     },
 
     /// Show node status
     Status,
+
+    /// List discovered peers
+    Peers {
+        /// API server address
+        #[arg(short, long, default_value = "http://127.0.0.1:8080")]
+        api_server: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -64,7 +92,8 @@ enum IdentityCommands {
     List,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize logging
@@ -80,8 +109,9 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Identity { action } => handle_identity(action, &cli.config_dir)?,
-        Commands::Start { port, tor } => handle_start(port, tor, &cli.config_dir)?,
+        Commands::Start { port, tor, discovery, bootstrap_peer } => handle_start(port, tor, discovery, bootstrap_peer, &cli.config_dir).await?,
         Commands::Status => handle_status(&cli.config_dir)?,
+        Commands::Peers { api_server } => handle_peers(api_server).await?,
     }
 
     Ok(())
@@ -93,8 +123,8 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
     match action {
         IdentityCommands::New { name } => {
             info!("Generating new identity...");
-            let mut identity = NodeIdentity::generate()?;
-            
+            let identity = NodeIdentity::generate()?;
+
             if let Some(custom_name) = name {
                 info!("Using custom name: {}", custom_name);
                 // Note: We'd need to add set_name() method to NodeIdentity
@@ -144,7 +174,7 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
     Ok(())
 }
 
-fn handle_start(port: u16, _tor: bool, config_dir: &PathBuf) -> Result<()> {
+async fn handle_start(port: u16, _tor: bool, discovery: bool, bootstrap_peer: Option<String>, config_dir: &PathBuf) -> Result<()> {
     let identity_path = expand_path(config_dir).join("identity.key");
 
     if !identity_path.exists() {
@@ -156,28 +186,120 @@ fn handle_start(port: u16, _tor: bool, config_dir: &PathBuf) -> Result<()> {
     info!("Starting Edge Hive node: {}", identity.name());
     info!("Identity loaded: {}", identity.peer_id());
 
-    // TODO: Start Axum server, Tor, libp2p
-    println!("🚀 Edge Hive node starting...");
-    println!("   Name:    {}", identity.name());
-    println!("   Port:    {}", port);
-    println!("   Peer ID: {}", identity.peer_id());
-    println!();
-    println!("⚠️  Core server not implemented yet");
-    println!("   Track progress: https://github.com/your-org/edge-hive/issues");
+    let local_key = identity::Keypair::generate_ed25519();
+    let local_peer_id = PeerId::from(local_key.public());
+    info!("Local peer id: {:?}", local_peer_id);
+
+
+    let discovery_svc = if discovery {
+        let ds = DiscoveryService::new().unwrap();
+        let mut kad_config = Config::default();
+        kad_config.set_query_timeout(std::time::Duration::from_secs(5 * 60));
+        let store = MemoryStore::new(local_peer_id);
+        let mut kad_behaviour = libp2p::kad::Behaviour::with_config(local_peer_id, store, kad_config);
+
+        if let Some(bootstrap_peer) = bootstrap_peer {
+            let addr: Multiaddr = bootstrap_peer.parse()?;
+            if let Some(Protocol::P2p(hash)) = addr.iter().last() {
+                let peer_id = PeerId::try_from(hash).unwrap();
+                kad_behaviour.add_address(&peer_id, addr);
+            }
+        }
+
+        let mut swarm = libp2p::SwarmBuilder::with_new_identity()
+            .with_tokio()
+            .with_tcp(
+                Default::default(),
+                libp2p::noise::Config::new,
+                libp2p::yamux::Config::default,
+            )?
+            .with_behaviour(|_| kad_behaviour)?
+            .with_swarm_config(|c| c.with_idle_connection_timeout(std::time::Duration::from_secs(30)))
+            .build();
+        swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+        tokio::spawn(async move {
+            loop {
+                let _ = swarm.select_next_some().await;
+            }
+        });
+        Arc::new(RwLock::new(ds))
+    } else {
+        Arc::new(RwLock::new(DiscoveryService::default()))
+    };
+
+    let data_dir = expand_path(config_dir);
+    let messages_path = data_dir.join("messages.json");
+    let messages = if messages_path.exists() {
+        let messages_json = fs::read_to_string(messages_path)?;
+        serde_json::from_str(&messages_json)?
+    } else {
+        HashMap::new()
+    };
+    let message_store = Arc::new(RwLock::new(messages));
+
+    server::run(port, discovery_svc, message_store, data_dir).await?;
 
     Ok(())
 }
 
-fn handle_status(_config_dir: &PathBuf) -> Result<()> {
+fn handle_status(config_dir: &PathBuf) -> Result<()> {
+    let identity_path = expand_path(config_dir).join("identity.key");
+
+    if !identity_path.exists() {
+        error!("No identity found. Create one with: edge-hive identity new");
+        std::process::exit(1);
+    }
+
+    let identity = NodeIdentity::load(&identity_path, None)?;
+    let public = identity.public_identity();
+
     println!("📊 Edge Hive Status");
     println!();
+    println!("  Peer ID:    {}", public.peer_id);
     println!("  Version:    0.1.0");
     println!("  Rust:       {}", env!("CARGO_PKG_RUST_VERSION"));
-    println!();
-    println!("⚠️  Status endpoint not implemented yet");
 
     Ok(())
 }
+
+async fn handle_peers(api_server: String) -> Result<()> {
+    let client = reqwest::Client::new();
+    let url = format!("{}/api/v1/peers", api_server);
+
+    println!("🔍 Querying peers from {}...", url);
+
+    match client.get(&url).send().await {
+        Ok(res) => {
+            if res.status().is_success() {
+                let peers: Vec<PeerInfo> = res.json().await?;
+                if peers.is_empty() {
+                    println!("\nNo peers discovered yet.");
+                } else {
+                    println!("\nDiscovered Peers ({}):", peers.len());
+                    println!("--------------------------------------------------");
+                    for peer in peers {
+                        println!("Peer ID: {}", peer.peer_id);
+                        println!("  Source: {:?}", peer.source);
+                        println!("  Last Seen: {}", peer.last_seen);
+                        println!("  Addresses:");
+                        for addr in peer.addresses {
+                            println!("    - {}", addr);
+                        }
+                        println!("--------------------------------------------------");
+                    }
+                }
+            } else {
+                println!("\nError: Received status code {}", res.status());
+            }
+        }
+        Err(e) => {
+            println!("\nError: Failed to connect to the server: {}", e);
+        }
+    }
+
+    Ok(())
+}
+
 
 /// Expand ~ in path
 fn expand_path(path: &PathBuf) -> PathBuf {
@@ -186,7 +308,7 @@ fn expand_path(path: &PathBuf) -> PathBuf {
         let home = directories::BaseDirs::new()
             .map(|b| b.home_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("."));
-        
+
         home.join(&path_str[2..])
     } else {
         path.clone()

@@ -1,6 +1,6 @@
 //! Start the Edge Hive server
 
-use edge_hive_core::server;
+use edge_hive_core::server::{self, MessageStore};
 use edge_hive_discovery::DiscoveryService;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
@@ -9,6 +9,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 use clap::Args;
+use std::collections::HashMap;
 
 #[derive(Args, Debug)]
 pub struct ServeArgs {
@@ -54,7 +55,7 @@ pub async fn run(
     println!();
 
     // Initialize discovery service
-    let _discovery = if args.discovery {
+    let discovery = if args.discovery {
         info!("🔍 Starting discovery service...");
         match DiscoveryService::new() {
             Ok(svc) => {
@@ -129,8 +130,13 @@ pub async fn run(
     println!("Press Ctrl+C to stop");
     println!();
 
+    // Create a default discovery service if it's not enabled
+    let discovery_svc = discovery.unwrap_or_else(|| Arc::new(RwLock::new(DiscoveryService::default())));
+    let message_store: MessageStore = Arc::new(RwLock::new(HashMap::new()));
+
+
     // Run the HTTP server
-    server::run(args.port).await?;
+    server::run(args.port, discovery_svc, message_store).await?;
 
     // Cleanup
     if let Some(mut t) = tunnel {

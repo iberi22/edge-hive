@@ -6,7 +6,8 @@
     IconDatabase,
     IconSettings,
     IconBrandTorchain,
-    IconUser
+    IconUser,
+    IconTerminal
   } from '@tabler/icons-svelte';
 
   export let currentPath = '';
@@ -14,6 +15,7 @@
   const menuItems = [
     { label: 'Dashboard', href: '/', icon: IconDashboard },
     { label: 'Nodes', href: '/nodes', icon: IconServer },
+    { label: 'Terminal', href: '/terminal', icon: IconTerminal },
     { label: 'Tor Network', href: '/tor', icon: IconBrandTorchain },
     { label: 'Database', href: '/database', icon: IconDatabase },
     { label: 'Settings', href: '/settings', icon: IconSettings },

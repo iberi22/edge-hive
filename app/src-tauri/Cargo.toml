@@ -15,6 +15,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1.40", features = ["full"] }
 sysinfo = "0.30"
+portable-pty = "0.8"
 
 # Edge Hive crates (for native integration)
 edge-hive-mcp = { path = "../../crates/edge-hive-mcp" }

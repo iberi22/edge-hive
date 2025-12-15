@@ -1,0 +1,123 @@
+# Docker Compose for Edge Hive multi-node local testing
+version: '3.9'
+
+services:
+  # Node 1: Bootstrap node with full features
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edge-hive-node1
+    hostname: node1
+    environment:
+      - RUST_LOG=info,edge_hive=debug
+      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
+      - EDGE_HIVE_NODE_NAME=bootstrap-node
+      - EDGE_HIVE_BOOTSTRAP=true
+      - EDGE_HIVE_MCP_AUTH_ENABLED=true
+      - EDGE_HIVE_OAUTH2_ISSUER=https://node1:8080
+    ports:
+      - "8080:8080"  # HTTP/HTTPS MCP API
+      - "4001:4001/udp"  # libp2p QUIC
+    networks:
+      edgehive_net:
+        ipv4_address: 172.20.0.10
+    volumes:
+      - node1_data:/data
+    command: ["serve", "--port", "8080", "--discovery", "--bootstrap"]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/edge-hive", "status", "--json"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # Node 2: Regular node connecting to bootstrap
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edge-hive-node2
+    hostname: node2
+    environment:
+      - RUST_LOG=info,edge_hive=debug
+      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
+      - EDGE_HIVE_NODE_NAME=worker-node-2
+      - EDGE_HIVE_BOOTSTRAP_PEERS=/ip4/172.20.0.10/udp/4001/quic-v1
+      - EDGE_HIVE_MCP_AUTH_ENABLED=true
+      - EDGE_HIVE_OAUTH2_ISSUER=https://node1:8080
+    ports:
+      - "8081:8080"
+      - "4002:4001/udp"
+    networks:
+      edgehive_net:
+        ipv4_address: 172.20.0.11
+    volumes:
+      - node2_data:/data
+    depends_on:
+      node1:
+        condition: service_healthy
+    command: ["serve", "--port", "8080", "--discovery"]
+
+  # Node 3: Regular node for load testing
+  node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edge-hive-node3
+    hostname: node3
+    environment:
+      - RUST_LOG=info,edge_hive=debug
+      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
+      - EDGE_HIVE_NODE_NAME=worker-node-3
+      - EDGE_HIVE_BOOTSTRAP_PEERS=/ip4/172.20.0.10/udp/4001/quic-v1
+      - EDGE_HIVE_MCP_AUTH_ENABLED=true
+      - EDGE_HIVE_OAUTH2_ISSUER=https://node1:8080
+    ports:
+      - "8082:8080"
+      - "4003:4001/udp"
+    networks:
+      edgehive_net:
+        ipv4_address: 172.20.0.12
+    volumes:
+      - node3_data:/data
+    depends_on:
+      node1:
+        condition: service_healthy
+    command: ["serve", "--port", "8080", "--discovery"]
+
+  # MCP Client Test Container (for AI agents simulation)
+  mcp-client:
+    image: alpine:3.19
+    container_name: edge-hive-mcp-client
+    networks:
+      edgehive_net:
+        ipv4_address: 172.20.0.20
+    depends_on:
+      - node1
+      - node2
+      - node3
+    command: |
+      sh -c "
+        apk add --no-cache curl jq &&
+        echo 'MCP Client ready. Test with:' &&
+        echo 'curl -X POST http://node1:8080/mcp/auth/token -d ...' &&
+        tail -f /dev/null
+      "
+
+networks:
+  edgehive_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+volumes:
+  node1_data:
+    driver: local
+  node2_data:
+    driver: local
+  node3_data:
+    driver: local

@@ -3,14 +3,16 @@
 //! Provides IPC commands for the mobile UI.
 
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 mod commands;
 mod mcp_commands;
+mod terminal_commands;
 
 use edge_hive_mcp::MCPServer;
 use mcp_commands::MCPState;
+use terminal_commands::TerminalState;
 
 /// Node status for the UI
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,9 +54,15 @@ pub fn run() {
         server: mcp_server,
     };
 
+    // Initialize Terminal State
+    let terminal_state = TerminalState {
+        writer: Arc::new(Mutex::new(None)),
+    };
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(mcp_state)
+        .manage(terminal_state)
         .invoke_handler(tauri::generate_handler![
             commands::get_node_status,
             commands::get_peers,
@@ -67,6 +75,9 @@ pub fn run() {
             mcp_commands::mcp_handle_request,
             mcp_commands::mcp_update_stats,
             mcp_commands::mcp_update_nodes,
+            terminal_commands::terminal_spawn,
+            terminal_commands::terminal_write,
+            terminal_commands::terminal_resize,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

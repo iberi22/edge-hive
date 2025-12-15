@@ -1,0 +1,25 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import Terminal from '@/components/terminal/Terminal.svelte';
+---
+
+<AdminLayout title="Terminal" currentPath="/terminal">
+  <div class="terminal-page">
+    <div class="terminal-grid">
+      <Terminal client:load />
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .terminal-page {
+    padding: 24px;
+    height: calc(100vh - 64px); /* Full height minus header */
+  }
+
+  .terminal-grid {
+    height: 100%;
+    display: grid;
+    gap: 24px;
+  }
+</style>

@@ -9,6 +9,7 @@ members = [
     "crates/edge-hive-wasm",
     "crates/edge-hive-billing",
     "crates/edge-hive-cloud",
+    "crates/edge-hive-mcp",
     "app/src-tauri",
 ]
 

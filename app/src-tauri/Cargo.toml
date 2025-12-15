@@ -17,6 +17,7 @@ tokio = { version = "1.40", features = ["full"] }
 sysinfo = "0.30"
 
 # Edge Hive crates (for native integration)
+edge-hive-mcp = { path = "../../crates/edge-hive-mcp" }
 # edge-hive-identity = { path = "../../crates/edge-hive-identity" }
 # edge-hive-discovery = { path = "../../crates/edge-hive-discovery" }
 

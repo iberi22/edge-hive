@@ -1,5 +1,7 @@
 import { writable } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
+import { mcpClient } from '$lib/mcp-client';
+import type { DashboardStats as MCPDashboardStats, Node as MCPNode } from '$lib/mcp-client';
 
 export interface Node {
   id: string;
@@ -56,14 +58,44 @@ export const dashboardActions = {
         ram: parseFloat((sysStats.used_memory / 1024 / 1024 / 1024).toFixed(1)), // Convert bytes to GB
       }));
       
+      // Sync stats with MCP server for agent access
+      await mcpClient.updateStats({
+        cpu_usage: sysStats.cpu_usage,
+        total_memory: sysStats.total_memory,
+        used_memory: sysStats.used_memory,
+        active_nodes: initialNodes.filter(n => n.status === 'online').length,
+        total_tunnels: 0, // TODO: Get from tunnel service
+      });
+      
       console.log('Dashboard refreshed with real data:', sysStats);
     } catch (error) {
       console.error('Failed to fetch system stats:', error);
       // Fallback or error handling
     }
   },
-  updateNodeStatus: (id: string, status: Node['status']) => {
+  updateNodeStatus: async (id: string, status: Node['status']) => {
     nodes.update(n => n.map(node => node.id === id ? { ...node, status } : node));
+    
+    // Sync updated nodes with MCP server
+    try {
+      const currentNodes = await new Promise<Node[]>(resolve => {
+        const unsub = nodes.subscribe(value => {
+          resolve(value);
+          unsub();
+        });
+      });
+      
+      await mcpClient.updateNodes(currentNodes.map(node => ({
+        id: node.id,
+        name: node.name,
+        status: node.status,
+        cpu: parseFloat(node.cpu) || 0,
+        memory: parseFloat(node.ram) * 1024 * 1024 * 1024, // GB to bytes
+        ip: node.ip,
+      })));
+    } catch (error) {
+      console.error('Failed to sync nodes with MCP:', error);
+    }
   },
   startAutoRefresh: (intervalMs = 5000) => {
     dashboardActions.refresh(); // Initial fetch

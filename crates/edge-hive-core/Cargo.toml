@@ -40,9 +40,11 @@ config.workspace = true
 # Platform directories
 directories = "5.0"
 
+# P2P Networking
+libp2p.workspace = true
+
 # Internal crates
 edge-hive-identity.workspace = true
-edge-hive-discovery.workspace = true
 edge-hive-tunnel.workspace = true
 # edge-hive-db.workspace = true  # Disabled until RocksDB is set up
 

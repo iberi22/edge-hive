@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "crates/edge-hive-core",
     "crates/edge-hive-identity",
-    "crates/edge-hive-discovery",
     "crates/edge-hive-tunnel",
     "crates/edge-hive-db",
     "crates/edge-hive-wasm",
@@ -95,7 +94,7 @@ rand = "0.8"
 blake3 = "1.5"  # Fast hashing for node IDs
 
 # P2P Networking
-libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
+libp2p = { version = "0.54", features = ["tokio", "macros", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
 
 # Tor Integration (Arti - Pure Rust Tor)
 arti-client = "0.20"
@@ -113,7 +112,6 @@ config = "0.14"
 
 # Internal crates
 edge-hive-identity = { path = "crates/edge-hive-identity" }
-edge-hive-discovery = { path = "crates/edge-hive-discovery" }
 edge-hive-tunnel = { path = "crates/edge-hive-tunnel" }
 edge-hive-db = { path = "crates/edge-hive-db" }
 edge-hive-wasm = { path = "crates/edge-hive-wasm" }

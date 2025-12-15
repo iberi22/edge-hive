@@ -123,8 +123,8 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
     match action {
         IdentityCommands::New { name } => {
             info!("Generating new identity...");
-            let mut identity = NodeIdentity::generate()?;
-            
+            let identity = NodeIdentity::generate()?;
+
             if let Some(custom_name) = name {
                 info!("Using custom name: {}", custom_name);
                 // Note: We'd need to add set_name() method to NodeIdentity
@@ -308,7 +308,7 @@ fn expand_path(path: &PathBuf) -> PathBuf {
         let home = directories::BaseDirs::new()
             .map(|b| b.home_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("."));
-        
+
         home.join(&path_str[2..])
     } else {
         path.clone()

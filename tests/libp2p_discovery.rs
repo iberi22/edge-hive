@@ -19,10 +19,8 @@ async fn test_libp2p_discovery() {
         )
         .unwrap()
         .with_behaviour(|_| {
-            let mut cfg = Config::default();
-            cfg.set_query_timeout(Duration::from_secs(5 * 60));
             let store = MemoryStore::new(local_peer_id);
-            Behaviour::with_config(local_peer_id, store, cfg)
+            Behaviour::new(local_peer_id, store)
         })
         .unwrap()
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(30)))
@@ -30,8 +28,20 @@ async fn test_libp2p_discovery() {
 
     swarm.listen_on("/ip4/127.0.0.1/tcp/0".parse().unwrap()).unwrap();
 
-    // Wait for the swarm to start listening
-    time::sleep(Duration::from_secs(1)).await;
+    // Wait for swarm to start listening and get the address
+    let addr = loop {
+        if let Some(listener) = swarm.listeners().next() {
+            break listener.clone();
+        }
+        tokio::select! {
+            event = swarm.select_next_some() => {
+                if let libp2p::swarm::SwarmEvent::NewListenAddr { address, .. } = event {
+                    break address;
+                }
+            }
+            _ = time::sleep(Duration::from_millis(100)) => {}
+        }
+    };
 
     let mut swarm2 = libp2p::SwarmBuilder::with_new_identity()
         .with_tokio()
@@ -43,16 +53,13 @@ async fn test_libp2p_discovery() {
         .unwrap()
         .with_behaviour(|key| {
             let peer_id = key.public().to_peer_id();
-            let mut cfg = Config::default();
-            cfg.set_query_timeout(Duration::from_secs(5 * 60));
             let store = MemoryStore::new(peer_id);
-            Behaviour::with_config(peer_id, store, cfg)
+            Behaviour::new(peer_id, store)
         })
         .unwrap()
         .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(30)))
         .build();
 
-    let addr = swarm.listeners().next().unwrap();
     swarm2.behaviour_mut().add_address(&local_peer_id, addr.clone());
     swarm2.behaviour_mut().bootstrap().unwrap();
 
@@ -62,7 +69,7 @@ async fn test_libp2p_discovery() {
         if let libp2p::swarm::SwarmEvent::Behaviour(libp2p::kad::Event::OutboundQueryProgressed { result, .. }) = event {
             if let libp2p::kad::QueryResult::GetClosestPeers(Ok(ok)) = result {
                 for peer in ok.peers {
-                    if peer == local_peer_id {
+                    if peer.peer_id == local_peer_id {
                         discovered = true;
                         break;
                     }

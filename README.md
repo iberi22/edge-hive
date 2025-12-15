@@ -44,21 +44,11 @@ All nodes communicate through **Tor** (anonymous, NAT-proof) + **libp2p** (fast 
 
 ### Android (Termux - No Root Required)
 
+For detailed instructions on how to install and configure Edge Hive on Termux, please see the comprehensive [Termux Guide](docs/agent-docs/GUIDE_TERMUX.md).
+
 ```bash
-# Install Rust
-pkg install rust
-
-# Install Edge Hive
-cargo install edge-hive
-
-# Start node (Tor + libp2p)
-edge-hive start
-
-# Or manually
-pkg install rust
-cargo install edge-hive
-edge-hive init
-edge-hive serve
+# Quick Install
+bash <(curl -fsSL https://edgehive.dev/install-termux.sh)
 ```
 
 ### Linux/Windows

@@ -60,7 +60,7 @@ pkg upgrade -y
 
 echo ""
 echo -e "${BLUE}📦 Installing dependencies...${NC}"
-pkg install -y openssl libsodium cloudflared
+pkg install -y rust clang openssl libsodium libevent zstd cloudflared termux-services
 
 # Check for --dev flag (build from source)
 if [ "$1" == "--dev" ]; then
@@ -129,21 +129,21 @@ edge-hive init
 echo ""
 echo -e "${BLUE}⚙️  Setting up auto-start on boot...${NC}"
 
+# 1. Instalar Termux:Boot (F-Droid)
+pkg install termux-services
+
+# 2. Crear servicio
 mkdir -p ~/.termux/boot
-cat > ~/.termux/boot/edge-hive.sh << 'BOOTSCRIPT'
+cat > ~/.termux/boot/edge-hive.sh << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
-# Edge Hive auto-start script
-
-# Acquire wake lock to prevent Android from killing the process
 termux-wake-lock
-
-# Start Edge Hive server
-edge-hive serve >> ~/.edge-hive/server.log 2>&1 &
-
-echo "Edge Hive started in background. PID: $!"
-BOOTSCRIPT
+edge-hive start --daemon
+EOF
 
 chmod +x ~/.termux/boot/edge-hive.sh
+
+# 3. Activar servicio
+sv-enable edge-hive
 
 echo -e "${GREEN}✓${NC} Auto-start configured"
 echo ""

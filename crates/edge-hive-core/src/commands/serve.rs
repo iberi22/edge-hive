@@ -1,15 +1,17 @@
 //! Start the Edge Hive server
 
-use edge_hive_core::server::{self, MessageStore};
-use edge_hive_discovery::DiscoveryService;
+use edge_hive_core::server;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
+use futures::StreamExt;
+use libp2p::{
+    identify, identity, kad, mdns, noise,
+    swarm::{Swarm, SwarmEvent},
+    tcp, yamux, SwarmBuilder,
+};
 use std::path::Path;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{info, warn, debug};
 use clap::Args;
-use std::collections::HashMap;
 
 #[derive(Args, Debug)]
 pub struct ServeArgs {
@@ -24,10 +26,40 @@ pub struct ServeArgs {
     /// Enable discovery service
     #[arg(long)]
     pub discovery: bool,
+}
 
-    /// Enable Tor onion service
-    #[arg(long)]
-    pub tor: bool,
+/// The network behaviour for the discovery service.
+#[derive(libp2p::swarm::NetworkBehaviour)]
+#[behaviour(out_event = "BehaviourEvent")]
+struct Behaviour {
+    identify: identify::Behaviour,
+    mdns: mdns::tokio::Behaviour,
+    kad: kad::Behaviour<kad::store::MemoryStore>,
+}
+
+#[derive(Debug)]
+enum BehaviourEvent {
+    Identify(identify::Event),
+    Mdns(mdns::Event),
+    Kad(kad::Event),
+}
+
+impl From<identify::Event> for BehaviourEvent {
+    fn from(event: identify::Event) -> Self {
+        BehaviourEvent::Identify(event)
+    }
+}
+
+impl From<mdns::Event> for BehaviourEvent {
+    fn from(event: mdns::Event) -> Self {
+        BehaviourEvent::Mdns(event)
+    }
+}
+
+impl From<kad::Event> for BehaviourEvent {
+    fn from(event: kad::Event) -> Self {
+        BehaviourEvent::Kad(event)
+    }
 }
 
 /// Run the serve command
@@ -55,19 +87,65 @@ pub async fn run(
     println!();
 
     // Initialize discovery service
-    let discovery = if args.discovery {
+    if args.discovery {
         info!("🔍 Starting discovery service...");
-        match DiscoveryService::new() {
-            Ok(svc) => {
-                println!("✅ Discovery: Enabled (mDNS + DHT)");
-                Some(Arc::new(RwLock::new(svc)))
-            }
-            Err(e) => {
-                warn!("Failed to start discovery: {}", e);
-                println!("⚠️  Discovery: Failed to start");
-                None
-            }
+
+        let mut secret_bytes = identity.secret_key_bytes();
+        let secret_key = identity::ed25519::SecretKey::try_from_bytes(&mut secret_bytes)?;
+        let keypair = identity::Keypair::from(identity::ed25519::Keypair::from(secret_key));
+        let peer_id = keypair.public().to_peer_id();
+
+        let mut behaviour = Behaviour {
+            identify: identify::Behaviour::new(identify::Config::new(
+                "/edge-hive/1.0.0".to_string(),
+                keypair.public(),
+            )),
+            mdns: mdns::tokio::Behaviour::new(mdns::Config::default(), peer_id)?,
+            kad: kad::Behaviour::new(peer_id, kad::store::MemoryStore::new(peer_id)),
+        };
+
+        let bootnodes = [
+            (
+                "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+                "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+            ),
+            (
+                "QmQCU2EcMqAqQPR2i9bChDtGNJchTf5CMDuiCC5H4hrF4k",
+                "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTf5CMDuiCC5H4hrF4k",
+            ),
+        ];
+
+        for (peer, addr) in bootnodes {
+            behaviour
+                .kad
+                .add_address(&peer.parse()?, addr.parse()?);
         }
+
+        let mut swarm = SwarmBuilder::with_existing_identity(keypair)
+            .with_tokio()
+            .with_tcp(
+                tcp::Config::default(),
+                noise::Config::new,
+                yamux::Config::default,
+            )?
+            .with_behaviour(|_| behaviour)?
+            .build();
+
+        swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+        swarm.behaviour_mut().kad.bootstrap()?;
+
+        tokio::spawn(async move {
+            loop {
+                match swarm.select_next_some().await {
+                    SwarmEvent::Behaviour(event) => {
+                        debug!("Discovery event: {:?}", event);
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        println!("✅ Discovery: Enabled (mDNS + DHT)");
     } else {
         println!("⏸️  Discovery: Disabled");
         None
@@ -94,49 +172,14 @@ pub async fn run(
         None
     };
 
-    // Initialize Tor onion service
-    let tor_service = if args.tor {
-        info!("🧅 Starting Tor onion service...");
-        
-        // Import Tor module
-        use edge_hive_tunnel::tor::{TorConfig, TorNode};
-
-        let tor_config = TorConfig::default()
-            .map_err(|e| anyhow::anyhow!("Failed to create Tor config: {}", e))?
-            .with_data_dir(data_dir.join("tor"))
-            .with_local_port(args.port);
-
-        let mut tor_node = TorNode::new(tor_config);
-        
-        match tor_node.start().await {
-            Ok(onion_addr) => {
-                println!("✅ Tor: http://{}.onion", onion_addr);
-                Some(tor_node)
-            }
-            Err(e) => {
-                warn!("Failed to start Tor: {}", e);
-                println!("⚠️  Tor: Failed ({})", e);
-                None
-            }
-        }
-    } else {
-        println!("⏸️  Tor: Disabled (use --tor to enable)");
-        None
-    };
-
     println!();
     println!("🌐 HTTP Server: http://0.0.0.0:{}", args.port);
     println!();
     println!("Press Ctrl+C to stop");
     println!();
 
-    // Create a default discovery service if it's not enabled
-    let discovery_svc = discovery.unwrap_or_else(|| Arc::new(RwLock::new(DiscoveryService::default())));
-    let message_store: MessageStore = Arc::new(RwLock::new(HashMap::new()));
-
-
     // Run the HTTP server
-    server::run(args.port, discovery_svc, message_store).await?;
+    server::run(args.port).await?;
 
     // Cleanup
     if let Some(mut t) = tunnel {

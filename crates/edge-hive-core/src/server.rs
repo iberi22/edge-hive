@@ -1,13 +1,17 @@
 //! HTTP Server module for Edge Hive
 
 use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
     routing::get,
-    Router,
-    Json,
+    Json, Router,
 };
 use serde::Serialize;
+use axum::extract::State;
+use edge_hive_db::DatabaseService;
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-use tracing::info;
+use tracing::{error, info};
 
 #[derive(Serialize)]
 struct HealthResponse {
@@ -41,16 +45,45 @@ async fn node_info() -> Json<NodeInfo> {
 }
 
 /// Build the Axum router
-pub fn build_router() -> Router {
+pub fn build_router(db: Arc<DatabaseService>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/api/v1/node", get(node_info))
+        .route("/api/v1/peers", get(get_peers))
+        .with_state(db)
         .layer(CorsLayer::permissive())
 }
 
+async fn get_peers(
+    State(db): State<Arc<DatabaseService>>,
+) -> Result<Json<Vec<edge_hive_db::StoredPeer>>, AppError> {
+    match db.get_peers().await {
+        Ok(peers) => Ok(Json(peers)),
+        Err(e) => {
+            error!("Failed to get peers from DB: {}", e);
+            Err(AppError::InternalServerError)
+        }
+    }
+}
+
+enum AppError {
+    InternalServerError,
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        match self {
+            AppError::InternalServerError => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
+            }
+        }
+    }
+}
+
+
 /// Run the HTTP server
-pub async fn run(port: u16) -> anyhow::Result<()> {
-    let app = build_router();
+pub async fn run(port: u16, db: Arc<DatabaseService>) -> anyhow::Result<()> {
+    let app = build_router(db);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     info!("🌐 HTTP server listening on http://{}", addr);

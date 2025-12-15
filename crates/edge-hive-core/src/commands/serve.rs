@@ -1,6 +1,7 @@
 //! Start the Edge Hive server
 
 use edge_hive_core::server;
+use edge_hive_db::DatabaseService;
 use edge_hive_discovery::DiscoveryService;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
@@ -49,13 +50,39 @@ pub async fn run(
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!();
 
+    // Initialize database
+    let db_path = data_dir.join("db");
+    std::fs::create_dir_all(&db_path)?;
+    let db = Arc::new(DatabaseService::new(&db_path).await?);
+    println!("✅ Database: Initialized at {}", db_path.display());
+
     // Initialize discovery service
-    let _discovery = if args.discovery {
+    let discovery_service = if args.discovery {
         info!("🔍 Starting discovery service...");
         match DiscoveryService::new() {
             Ok(svc) => {
                 println!("✅ Discovery: Enabled (mDNS + DHT)");
-                Some(Arc::new(RwLock::new(svc)))
+                let service = Arc::new(RwLock::new(svc));
+                let mut rx = service.write().await.subscribe();
+                let db_clone = Arc::clone(&db);
+
+                tokio::spawn(async move {
+                    while let Ok(event) = rx.recv().await {
+                        if let edge_hive_discovery::DiscoveryEvent::PeerDiscovered(peer) = event {
+                            let stored_peer = edge_hive_db::StoredPeer {
+                                peer_id: peer.peer_id,
+                                name: None, // Name is not available from discovery
+                                addresses: peer.addresses,
+                                last_seen: peer.last_seen,
+                                capabilities: 0, // Capabilities not available from discovery
+                            };
+                            if let Err(e) = db_clone.add_peer(&stored_peer).await {
+                                tracing::error!("Failed to save peer to DB: {}", e);
+                            }
+                        }
+                    }
+                });
+                Some(service)
             }
             Err(e) => {
                 warn!("Failed to start discovery: {}", e);
@@ -96,7 +123,7 @@ pub async fn run(
     println!();
 
     // Run the HTTP server
-    server::run(args.port).await?;
+    server::run(args.port, db).await?;
 
     // Cleanup
     if let Some(mut t) = tunnel {

@@ -4,7 +4,7 @@
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
-use surrealdb::engine::local::Mem;
+use surrealdb::engine::local::RocksDb;
 use surrealdb::Surreal;
 use thiserror::Error;
 use tracing::info;
@@ -42,6 +42,24 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
+/// Encrypted message stored in the database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredMessage {
+    pub message_id: String,
+    pub payload: Vec<u8>,
+    pub received_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// WASM plugin metadata stored in the database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredPlugin {
+    pub plugin_id: String,
+    pub name: String,
+    pub version: String,
+    pub enabled: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
 /// Database service for Edge Hive
 pub struct DatabaseService {
     db: Surreal<surrealdb::engine::local::Db>,
@@ -52,7 +70,7 @@ impl DatabaseService {
     pub async fn new(path: &Path) -> Result<Self, DbError> {
         info!("📦 Opening database at {:?}", path);
 
-        let db = Surreal::new::<Mem>()
+        let db = Surreal::new::<RocksDb>(path)
             .await
             .map_err(|e| DbError::Connection(e.to_string()))?;
 
@@ -94,36 +112,53 @@ impl DatabaseService {
             )
             .await?;
 
+        // Define messages table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS message SCHEMAFULL;
+                DEFINE FIELD message_id ON message TYPE string;
+                DEFINE FIELD payload ON message TYPE bytes;
+                DEFINE FIELD received_at ON message TYPE datetime;
+                DEFINE INDEX message_id_idx ON message FIELDS message_id UNIQUE;
+                "#,
+            )
+            .await?;
+
+        // Define plugins table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS plugin SCHEMAFULL;
+                DEFINE FIELD plugin_id ON plugin TYPE string;
+                DEFINE FIELD name ON plugin TYPE string;
+                DEFINE FIELD version ON plugin TYPE string;
+                DEFINE FIELD enabled ON plugin TYPE bool;
+                DEFINE FIELD created_at ON plugin TYPE datetime;
+                DEFINE INDEX plugin_id_idx ON plugin FIELDS plugin_id UNIQUE;
+                "#,
+            )
+            .await?;
+
         info!("✅ Database schema initialized");
         Ok(())
     }
 
     /// Save or update a peer
-    pub async fn save_peer(&self, peer: &StoredPeer) -> Result<(), DbError> {
+    pub async fn add_peer(&self, peer: &StoredPeer) -> Result<(), DbError> {
         self.db
-            .query("DELETE peer WHERE peer_id = $peer_id")
-            .bind(("peer_id", &peer.peer_id))
+            .update(("peer", &peer.peer_id))
+            .content(peer)
             .await?;
+        Ok(())
+    }
 
+    /// Store an encrypted message
+    pub async fn store_message(&self, message: &StoredMessage) -> Result<(), DbError> {
         self.db
-            .query(
-                r#"
-                CREATE peer CONTENT {
-                    peer_id: $peer_id,
-                    name: $name,
-                    addresses: $addresses,
-                    last_seen: $last_seen,
-                    capabilities: $capabilities
-                }
-                "#,
-            )
-            .bind(("peer_id", &peer.peer_id))
-            .bind(("name", &peer.name))
-            .bind(("addresses", &peer.addresses))
-            .bind(("last_seen", peer.last_seen))
-            .bind(("capabilities", peer.capabilities))
+            .create(("message", &message.message_id))
+            .content(message)
             .await?;
-
         Ok(())
     }
 
@@ -214,9 +249,25 @@ mod tests {
             capabilities: 1,
         };
 
-        db.save_peer(&peer).await.unwrap();
+        db.add_peer(&peer).await.unwrap();
         let loaded = db.get_peer("test-peer-id").await.unwrap();
         assert!(loaded.is_some());
         assert_eq!(loaded.unwrap().name, Some("test-node".into()));
+
+        // Test message
+        let message = StoredMessage {
+            message_id: "test-message-id".into(),
+            payload: vec![1, 2, 3],
+            received_at: chrono::Utc::now(),
+        };
+
+        db.store_message(&message).await.unwrap();
+        let mut response = db
+            .query("SELECT * FROM message WHERE message_id = 'test-message-id'")
+            .await
+            .unwrap();
+        let messages: Vec<StoredMessage> = response.take(0).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].payload, vec![1, 2, 3]);
     }
 }

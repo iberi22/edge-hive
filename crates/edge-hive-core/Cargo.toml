@@ -44,7 +44,7 @@ directories = "5.0"
 edge-hive-identity.workspace = true
 edge-hive-discovery.workspace = true
 edge-hive-tunnel.workspace = true
-# edge-hive-db.workspace = true  # Disabled until RocksDB is set up
+edge-hive-db.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4"

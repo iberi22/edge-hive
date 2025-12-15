@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::sync::broadcast::{self, Sender};
 use tokio::sync::RwLock;
 use tracing::info;
 
@@ -40,10 +41,18 @@ pub enum DiscoverySource {
     Direct,
 }
 
+/// Events emitted by the discovery service
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum DiscoveryEvent {
+    PeerDiscovered(PeerInfo),
+    PeerExpired(String),
+}
+
 /// Discovery service managing peer discovery
 pub struct DiscoveryService {
     local_peer_id: PeerId,
     peers: Arc<RwLock<HashMap<PeerId, PeerInfo>>>,
+    event_sender: Sender<DiscoveryEvent>,
 }
 
 impl DiscoveryService {
@@ -52,13 +61,20 @@ impl DiscoveryService {
         // Generate a random peer ID for now
         let keypair = libp2p::identity::Keypair::generate_ed25519();
         let peer_id = keypair.public().to_peer_id();
+        let (tx, _) = broadcast::channel(100);
 
         info!("🔍 Discovery service created with peer ID: {}", peer_id);
 
         Ok(Self {
             local_peer_id: peer_id,
             peers: Arc::new(RwLock::new(HashMap::new())),
+            event_sender: tx,
         })
+    }
+
+    /// Subscribe to discovery events
+    pub fn subscribe(&self) -> broadcast::Receiver<DiscoveryEvent> {
+        self.event_sender.subscribe()
     }
 
     /// Get the local peer ID
@@ -83,9 +99,14 @@ impl DiscoveryService {
         });
 
         if !peer_info.addresses.contains(&address) {
-            peer_info.addresses.push(address);
+            peer_info.addresses.push(address.clone());
         }
         peer_info.last_seen = chrono::Utc::now();
+
+        let event = DiscoveryEvent::PeerDiscovered(peer_info.clone());
+        if self.event_sender.send(event).is_err() {
+            tracing::warn!("Failed to broadcast peer discovery event");
+        }
 
         info!("📡 Peer added/updated: {} ({:?})", peer_id, source);
     }

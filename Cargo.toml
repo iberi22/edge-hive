@@ -95,7 +95,7 @@ rand = "0.8"
 blake3 = "1.5"  # Fast hashing for node IDs
 
 # P2P Networking
-libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
+libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux", "serde"] }
 
 # Tor Integration (Arti - Pure Rust Tor)
 arti-client = "0.20"
@@ -103,7 +103,7 @@ tor-hsservice = "0.20"  # Onion Services v3
 tor-rtcompat = { version = "0.20", features = ["tokio"] }
 
 # Database
-surrealdb = { version = "2.0", features = ["kv-mem"] }
+surrealdb = { version = "2.0", features = ["kv-rocksdb"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }

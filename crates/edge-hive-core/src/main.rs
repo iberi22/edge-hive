@@ -5,6 +5,7 @@ use directories::ProjectDirs;
 
 mod config;
 pub mod commands {
+    pub mod db;
     pub mod init;
     pub mod serve;
     pub mod status;
@@ -51,6 +52,9 @@ enum Commands {
 
     /// Run as MCP Server (Model Context Protocol)
     Mcp(commands::mcp::McpArgs),
+
+    /// Manage the database
+    Db(commands::db::DbArgs),
 }
 
 #[tokio::main]
@@ -89,6 +93,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Tunnel(a) => commands::tunnel::run(a, &data_dir).await?,
         Commands::Plugin(a) => commands::plugin::run(a, &data_dir).await?,
         Commands::Mcp(a) => commands::mcp::run(a).await?, // Run MCP
+        Commands::Db(a) => commands::db::run(a, &data_dir).await?,
     }
 
     Ok(())

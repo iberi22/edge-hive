@@ -2,9 +2,12 @@
 //!
 //! Exposes local services to the internet via Cloudflare Tunnel or Tor onion services.
 
+pub mod tor;
+
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use thiserror::Error;
+use anyhow::Result;
 use tokio::process::{Child, Command};
 use tracing::{info, warn};
 
@@ -19,6 +22,9 @@ pub enum TunnelError {
 
     #[error("Tunnel process error: {0}")]
     Process(#[from] std::io::Error),
+
+    #[error("anyhow error")]
+    Anyhow(#[from] anyhow::Error),
 }
 
 /// Tunnel backend type
@@ -33,10 +39,12 @@ pub enum TunnelBackend {
 }
 
 /// Tunnel service for exposing local ports to the internet
+use crate::tor::TorNode;
 pub struct TunnelService {
     backend: TunnelBackend,
     process: Option<Child>,
     public_url: Option<String>,
+    tor_node: Option<TorNode>,
 }
 
 impl TunnelService {
@@ -46,6 +54,7 @@ impl TunnelService {
             backend,
             process: None,
             public_url: None,
+            tor_node: None,
         }
     }
 
@@ -65,8 +74,14 @@ impl TunnelService {
                 self.start_cloudflared_quick(local_port).await
             }
             TunnelBackend::Tor => {
-                // TODO: Implement Tor in v1.1
-                Err(TunnelError::NotAvailable("Tor support coming in v1.1".into()))
+                let data_dir = directories::ProjectDirs::from("com", "edge-hive", "edge-hive")
+                    .ok_or_else(|| TunnelError::Start("failed to get project directories".into()))?
+                    .data_dir()
+                    .to_path_buf();
+                let tor_node = TorNode::bootstrap(&data_dir, local_port).await?;
+                self.public_url = Some(format!("http://{}.onion", tor_node.onion_address));
+                self.tor_node = Some(tor_node);
+                Ok(self.public_url.clone().unwrap())
             }
         }
     }
@@ -176,5 +191,15 @@ mod tests {
         let service = TunnelService::new(TunnelBackend::Cloudflared);
         assert!(!service.is_running());
         assert!(service.public_url().is_none());
+    }
+
+    #[tokio::test]
+    #[ignore] // This test is a slow integration test that connects to the Tor network.
+    async fn test_tor_tunnel_starts() {
+        let mut service = TunnelService::new(TunnelBackend::Tor);
+        let result = service.start_quick(8080).await;
+        assert!(result.is_ok());
+        assert!(service.public_url().is_some());
+        assert!(service.public_url().unwrap().contains(".onion"));
     }
 }

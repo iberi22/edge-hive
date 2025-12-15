@@ -98,7 +98,7 @@ blake3 = "1.5"  # Fast hashing for node IDs
 libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
 
 # Tor Integration (Arti - Pure Rust Tor)
-arti-client = "0.20"
+arti-client = { version = "0.20", features = ["hsservice"] }
 tor-hsservice = "0.20"  # Onion Services v3
 tor-rtcompat = { version = "0.20", features = ["tokio"] }
 

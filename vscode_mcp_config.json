@@ -1,0 +1,10 @@
+{
+   "mcpServers": {
+      "edge-hive": {
+         "command": "edge-hive.exe",
+         "args": [
+            "mcp"
+         ]
+      }
+   }
+}

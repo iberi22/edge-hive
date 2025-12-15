@@ -1,0 +1,78 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/edge-hive-core",
+    "crates/edge-hive-identity",
+    "crates/edge-hive-discovery",
+    "crates/edge-hive-tunnel",
+    "crates/edge-hive-db",
+    "crates/edge-hive-wasm",
+    "crates/edge-hive-billing",
+    "crates/edge-hive-cloud",
+    "app/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/your-org/edge-hive"
+authors = ["Edge Hive Contributors"]
+rust-version = "1.85"
+
+[workspace.dependencies]
+# Async Runtime
+tokio = { version = "1.40", features = ["full"] }
+futures = "0.3"
+
+# Web Framework
+axum = "0.7"
+tower = "0.5"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error Handling
+anyhow = "1"
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Crypto
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+rand = "0.8"
+
+# P2P
+libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify"] }
+
+# Database
+surrealdb = { version = "2.0", features = ["kv-mem"] }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Config
+config = "0.14"
+
+# Internal crates
+edge-hive-identity = { path = "crates/edge-hive-identity" }
+edge-hive-discovery = { path = "crates/edge-hive-discovery" }
+edge-hive-tunnel = { path = "crates/edge-hive-tunnel" }
+edge-hive-db = { path = "crates/edge-hive-db" }
+edge-hive-wasm = { path = "crates/edge-hive-wasm" }
+edge-hive-billing = { path = "crates/edge-hive-billing" }
+edge-hive-cloud = { path = "crates/edge-hive-cloud" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true

@@ -1,0 +1,23 @@
+[package]
+name = "edge-hive-identity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Cryptographic identity system for Edge Hive nodes"
+
+[dependencies]
+ed25519-dalek.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+base64 = "0.22"
+hex = "0.4"
+zeroize = { version = "1.7", features = ["derive"] }
+directories = "5.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.10"

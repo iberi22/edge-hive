@@ -1,0 +1,20 @@
+[package]
+name = "edge-hive-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WASM plugin runtime for Edge Hive"
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+# WASM runtime
+wasmtime = "25"
+
+[dev-dependencies]
+tokio-test = "0.4"

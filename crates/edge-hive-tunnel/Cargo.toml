@@ -1,0 +1,23 @@
+[package]
+name = "edge-hive-tunnel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Tunneling support for Edge Hive (Cloudflare + Tor)"
+
+[dependencies]
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+# Cloudflare Tunnel (placeholder until libcfd is available)
+# libcfd = "0.1"
+
+# For fallback: spawn cloudflared process
+which = "6.0"
+
+[dev-dependencies]
+tokio-test = "0.4"

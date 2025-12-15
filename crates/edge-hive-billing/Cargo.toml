@@ -1,0 +1,24 @@
+[package]
+name = "edge-hive-billing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Stripe billing integration for Edge Hive managed tier"
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+# Stripe SDK (when we implement)
+# stripe-rust = "0.26"
+
+# JWT for user tokens
+jsonwebtoken = "9"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"

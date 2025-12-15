@@ -1,0 +1,25 @@
+BUSINESS SOURCE LICENSE 1.1
+
+License Text Copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
+"Business Source License" is a trademark of MariaDB Corporation Ab.
+
+Parameters
+
+Licensor:                 Edge Hive Developers
+Licensor's Website:       https://edge-hive.io
+Software:                 Edge Hive Core and Mobile App
+Change Date:              2029-12-14
+Change License:           Apache License, Version 2.0
+Additional Use Grant:     You may use the Software for non-commercial purposes, including personal use, educational use, and internal testing. You may NOT use the Software to provide a managed "Edge Hive-as-a-Service" or similar commercial offering to third parties.
+
+Terms
+
+1. Grant of License. The Licensor hereby grants you the right to copy, modify, create derivative works, redistribute, and make non-Use of the Software.
+
+2. Contributions. Any contribution of code, documentation or material that you make to the Software is subject to the terms of the Contributor License Agreement (CLA) if one exists, or otherwise typically dual-licensed under this License and the Change License.
+
+3. Change License. On the Change Date, or the fourth anniversary of the first publicly available distribution of a specific version of the Software, whichever comes first, the Licensor hereby grants you rights under the terms of the Change License, and this License shall terminate.
+
+4. Definitions. "Use" means running the Software in a production environment. "Change Date" means the date specified in the Parameters. "Change License" means the license specified in the Parameters.
+
+5. Disclaimer. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE LICENSORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

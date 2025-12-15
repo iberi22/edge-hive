@@ -39,6 +39,7 @@ config.workspace = true
 
 # Platform directories
 directories = "5.0"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Internal crates
 edge-hive-identity.workspace = true

@@ -1,0 +1,179 @@
+name: Cross-Platform Build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+
+env:
+  RUST_VERSION: "1.85"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-matrix:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64 (glibc)
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: false
+          
+          # Linux x86_64 (musl - static)
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use-cross: true
+          
+          # Android (Termux)
+          - target: aarch64-linux-android
+            os: ubuntu-latest
+            use-cross: true
+          
+          # Windows
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            use-cross: true
+          
+          # macOS Intel
+          - target: x86_64-apple-darwin
+            os: macos-13
+            use-cross: false
+          
+          # macOS Apple Silicon
+          - target: aarch64-apple-darwin
+            os: macos-14
+            use-cross: false
+          
+          # ARM64 Linux (Raspberry Pi)
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+          
+          # WASM (Cloudflare Workers)
+          - target: wasm32-wasi
+            os: ubuntu-latest
+            use-cross: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: ${{ matrix.target }}
+      
+      - name: Install cross
+        if: matrix.use-cross
+        uses: taiki-e/install-action@cross
+      
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      
+      - name: Build
+        run: |
+          if [ "${{ matrix.use-cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+        shell: bash
+      
+      - name: Package binary
+        run: |
+          cd target/${{ matrix.target }}/release
+          
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ]; then
+            BIN_NAME="edge-hive.exe"
+          else
+            BIN_NAME="edge-hive"
+          fi
+          
+          if [ -f "$BIN_NAME" ]; then
+            tar czf edge-hive-${{ matrix.target }}.tar.gz "$BIN_NAME"
+            sha256sum edge-hive-${{ matrix.target }}.tar.gz > edge-hive-${{ matrix.target }}.tar.gz.sha256
+          fi
+        shell: bash
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-hive-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/edge-hive-${{ matrix.target }}.tar.gz
+            target/${{ matrix.target }}/release/edge-hive-${{ matrix.target }}.tar.gz.sha256
+  
+  release:
+    name: Create GitHub Release
+    needs: build-matrix
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*.tar.gz*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

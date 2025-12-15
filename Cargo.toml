@@ -15,10 +15,17 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-or-later"
 repository = "https://github.com/your-org/edge-hive"
 authors = ["Edge Hive Contributors"]
 rust-version = "1.85"
+
+# Cross-compilation targets (GitHub Actions builds all)
+# Priority targets for Phase 1:
+# - x86_64-unknown-linux-gnu    (Linux PC, VPS)
+# - x86_64-unknown-linux-musl   (Docker, Alpine)
+# - aarch64-linux-android       (Android via Termux)
+# - x86_64-pc-windows-gnu       (Windows)
 
 [workspace.dependencies]
 # Async Runtime
@@ -45,9 +52,15 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Crypto
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand = "0.8"
+blake3 = "1.5"  # Fast hashing for node IDs
 
-# P2P
-libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify"] }
+# P2P Networking
+libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
+
+# Tor Integration (Arti - Pure Rust Tor)
+arti-client = "0.20"
+tor-hsservice = "0.20"  # Onion Services v3
+tor-rtcompat = { version = "0.20", features = ["tokio"] }
 
 # Database
 surrealdb = { version = "2.0", features = ["kv-mem"] }

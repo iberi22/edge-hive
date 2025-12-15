@@ -1,42 +1,58 @@
 # 🐝 Edge Hive
 
-> **Your Personal VPS Swarm - Sovereign Computing at the Edge**
+> **Run Your Server Anywhere: Android, PC, Docker, VPS**  
+> **Sovereign Computing with Tor + P2P Networking**
 
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
 [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.0-pink?logo=surrealdb)](https://surrealdb.com/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue?logo=tauri)](https://tauri.app/)
-[![License](https://img.shields.io/badge/license-BSL--1.1-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 ---
 
 ## 🎯 What is Edge Hive?
 
-Edge Hive is a **distributed edge computing platform** that transforms old Android phones, spare laptops, and cloud instances into a unified personal server swarm. Think of it as **your own Supabase/Firebase**, but:
+Edge Hive transforms **any device** into a sovereign compute node. Deploy the same Rust binary on:
 
-- 🦀 **Built in Rust** for maximum performance and safety
-- 📱 **Runs on Android** via Termux or native APK
-- 🌐 **Cross-platform** (Android, Linux, Windows)
-- 🔗 **Auto-discovers** other nodes on your network
-- 🚀 **Exposes to internet** via Cloudflare Tunnel or Tor
+- 📱 **Android phones** (via Termux, no root)
+- 💻 **PCs** (Linux, Windows, macOS)
+- 🐳 **Docker** containers (Alpine-based, 15MB image)
+- ☁️ **VPS** servers (any provider, generic SSH)
+- 🍓 **Raspberry Pi** and ARM devices
+
+All nodes communicate through **Tor** (anonymous, NAT-proof) + **libp2p** (fast P2P), forming a unified swarm where:
+
+- 🔐 **Identity > IP**: Nodes use Ed25519 keypairs, not IP addresses
+- 🌐 **Works Everywhere**: Behind firewalls, CGNAT, corporate proxies
+- 🧅 **Privacy First**: Tor onion services by default (optional Cloudflare Tunnel)
+- 📊 **One Database**: SurrealDB syncs across all your devices
+- 🚀 **Zero Config**: Works out-of-the-box, no port forwarding
 
 ## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
-| **Node Discovery** | Auto-find other Edge Hive nodes on local network (mDNS) and globally (Kademlia DHT) |
-| **Cryptographic Identity** | Ed25519 keypairs replace IP addresses - your node is portable |
-| **SurrealDB Embedded** | Full database with realtime, graphs, and vector search - offline-first |
+| **Multi-Platform Binary** | Single Rust codebase → 8 compilation targets (Android, Linux, Windows, Docker) |
+| **Tor Integration** | Anonymous `.onion` addresses, censorship-resistant, NAT traversal |
+| **libp2p Mesh** | Fast local sync (mDNS), global discovery (Kademlia DHT) |
+| **Cryptographic Identity** | Ed25519 keypairs replace IP addresses - identity is portable |
+| **SurrealDB Embedded** | Offline-first database with real-time sync, graphs, vector search |
 | **WASM Plugins** | Extend functionality with sandboxed WebAssembly modules |
-| **Dual Tunneling** | Cloudflare Tunnel (fast) + Tor Onion (censorship-resistant) |
-| **Cross-Platform** | One codebase → Android APK, Linux binary, Windows EXE |
+| **Cloudflare Tunnel** | Optional public HTTPS endpoints (for web services) |
 
 ## 🚀 Quick Start
 
-### Termux (Android)
+### Android (Termux - No Root Required)
 
 ```bash
-# Install from script
-curl -sSL https://edge-hive.io/install.sh | bash
+# Install Rust
+pkg install rust
+
+# Install Edge Hive
+cargo install edge-hive
+
+# Start node (Tor + libp2p)
+edge-hive start
 
 # Or manually
 pkg install rust

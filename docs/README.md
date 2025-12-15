@@ -26,8 +26,8 @@ Our documentation is organized into **four quadrants** based on user needs:
 
 ### 📖 [Tutorials](./tutorials/) - Learn by doing
 
-**When:** You're new to Edge Hive  
-**Goal:** Learn through guided lessons  
+**When:** You're new to Edge Hive
+**Goal:** Learn through guided lessons
 **Examples:**
 
 - Quick Start - Run your first node
@@ -36,8 +36,8 @@ Our documentation is organized into **four quadrants** based on user needs:
 
 ### 🎯 [How-To Guides](./how-to/) - Get things done
 
-**When:** You know what you want, need to know how  
-**Goal:** Solve specific problems  
+**When:** You know what you want, need to know how
+**Goal:** Solve specific problems
 **Examples:**
 
 - How to expose your node via Cloudflare Tunnel
@@ -46,8 +46,8 @@ Our documentation is organized into **four quadrants** based on user needs:
 
 ### 💡 [Explanation](./explanation/) - Understand concepts
 
-**When:** You want to understand why things work  
-**Goal:** Deepen your conceptual knowledge  
+**When:** You want to understand why things work
+**Goal:** Deepen your conceptual knowledge
 **Examples:**
 
 - Identity-based networking explained
@@ -56,8 +56,8 @@ Our documentation is organized into **four quadrants** based on user needs:
 
 ### 📚 [Reference](./reference/) - Look up facts
 
-**When:** You need precise information  
-**Goal:** Find accurate technical details  
+**When:** You need precise information
+**Goal:** Find accurate technical details
 **Examples:**
 
 - HTTP API reference

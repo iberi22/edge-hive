@@ -6,14 +6,18 @@
 
 ## 🎯 Project Vision
 
-**Edge Hive** transforms old Android phones, spare laptops, and cloud instances into a unified personal server swarm. A sovereign computing platform where users own their data and infrastructure.
+**Edge Hive** transforms ANY device into a sovereign compute node: Android phones, PCs, Docker containers, VPS servers, even Raspberry Pis. A unified swarm where every node is equal, identified by cryptography (not IP), and communicates through **Tor + libp2p** for maximum privacy and resilience.
 
-### Design Philosophy (Inspired by Urbit)
+### Design Philosophy (Inspired by Urbit + IPFS + Tor)
 
-1. **Identity over IP**: Nodes use cryptographic identities (Ed25519), not IP addresses
-2. **Time-Travel Database**: SurrealDB with versioned state (like Urbit's Clay filesystem)
-3. **Minimalist Kernel**: Rust core + WASM plugins (like Urbit's Arvo + userspace apps)
-4. **Portable State**: Copy your `.edge-hive/` folder = copy your entire server
+1. **Identity over IP**: Nodes use Ed25519 keypairs, not IP addresses. Your identity IS your public key.
+2. **Universal Binary**: Single Rust binary runs on Android (Termux), Linux, Windows, macOS, Docker, VPS.
+3. **Dual Network Stack**: 
+   - **Tor Onion Services**: Anonymous, censorship-resistant (default)
+   - **Cloudflare Tunnel**: Fast, optional for public services
+4. **Time-Travel Database**: SurrealDB with versioned state (like Urbit's Clay)
+5. **Minimalist Kernel**: 15MB Rust binary + WASM plugins
+6. **Portable State**: `rsync .edge-hive/ user@newhost:` = migrate entire server
 
 ---
 
@@ -43,11 +47,32 @@
 
 | Decision | Choice | Rationale | Status |
 |----------|--------|-----------|--------|
-| **Tunneling** | Cloudflare Tunnel (primary) | Fast, reliable, free tier | ✅ Final |
-| **Backup Tunnel** | Tor Onion (v1.1+) | Censorship-resistant fallback | 🔄 Planned |
-| **Android Runtime** | Termux | No root required, full Rust support | ✅ Final |
-| **Cloud Provider** | AWS (managed tier) | Auto-provisioning via SDK | ✅ Final |
-| **Billing** | Stripe | Industry standard, subscription ready | ✅ Final |
+| **Primary Network** | Tor Onion Services | Anonymous, censorship-proof, NAT traversal | ✅ Final |
+| **Secondary Network** | Cloudflare Tunnel (opt-in) | Fast HTTP, public services, SEO-friendly | ✅ Final |
+| **P2P Discovery** | libp2p (Kademlia DHT + mDNS) | Local + global peer discovery | ✅ Final |
+| **Deployment Targets** | Android, Linux, Windows, macOS, Docker | Single binary, cross-compiled | ✅ Final |
+| **Android Runtime** | Termux (no root) | Full Rust/LLVM support, pkg install | ✅ Final |
+| **VPS/Cloud** | Generic (works on any provider) | No vendor lock-in, SSH + binary | ✅ Final |
+| **Container** | Docker (Alpine Linux base) | <20MB image, multi-arch | ✅ Final |
+| **Billing** | Stripe (managed tier only) | Optional for cloud auto-provision | 🔄 Future |
+
+### Compilation Targets (Cross-Platform)
+
+| Target | Platform | Binary Size | Use Case | Status |
+|--------|----------|-------------|----------|--------|
+| `x86_64-unknown-linux-gnu` | Linux (PC, VPS) | ~12MB | Ubuntu, Debian, Fedora | ✅ Priority |
+| `x86_64-unknown-linux-musl` | Linux (static) | ~15MB | Alpine, Docker, old distros | ✅ Priority |
+| `aarch64-linux-android` | Android (Termux) | ~14MB | Phones, tablets (Termux) | ✅ Priority |
+| `x86_64-pc-windows-gnu` | Windows | ~13MB | Desktop, servers | ✅ Priority |
+| `x86_64-apple-darwin` | macOS (Intel) | ~12MB | Mac desktop | 🔄 Phase 2 |
+| `aarch64-apple-darwin` | macOS (Apple Silicon) | ~12MB | M1/M2/M3 Macs | 🔄 Phase 2 |
+| `aarch64-unknown-linux-gnu` | ARM64 Linux | ~11MB | Raspberry Pi, ARM servers | 🔄 Phase 2 |
+| `wasm32-wasi` | WASM (plugins) | ~5MB | Browser, Cloudflare Workers | 🔄 Phase 3 |
+
+**Build Strategy:**
+- GitHub Actions matrix build: 8 targets en paralelo
+- Release artifacts: `edge-hive-{version}-{target}.tar.gz`
+- Checksums SHA256 + GPG signatures
 
 ### Security
 
@@ -124,6 +149,7 @@ edge-hive/
 **Traditional Problem**: Nodes use IPs (192.168.1.10). IP changes = node unreachable.
 
 **Edge Hive Solution**:
+
 - Each node generates an **Ed25519 keypair** on first boot
 - Nodes identify each other by **public key hash**, not IP
 - libp2p DHT maps `node-id` → current IP/port
@@ -160,12 +186,14 @@ edge-hive/
 **Use Case**: User has 2 Android phones + 1 AWS instance.
 
 **Setup**:
+
 1. All nodes share same **Hive ID** (derived from owner's master key)
 2. SurrealDB configured in **cluster mode** (eventual consistency)
 3. Data sharded: Phone A gets 33%, Phone B gets 33%, AWS gets 34%
 4. Replication factor: 2 (each shard stored on 2 nodes)
 
 **Result**:
+
 - 1 node fails → data still available from replica
 - Aggregate storage = sum of all nodes
 - Reads distributed across nodes (faster)
@@ -239,6 +267,6 @@ User in App                    Edge Hive Backend              AWS
 
 ---
 
-**Last Updated**: December 2025  
-**Protocol Version**: Git-Core 3.2.1  
+**Last Updated**: December 2025
+**Protocol Version**: Git-Core 3.2.1
 **Project Phase**: MVP Development

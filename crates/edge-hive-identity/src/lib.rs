@@ -4,7 +4,9 @@
 
 use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
 use rand::rngs::OsRng;
+use age::secrecy::SecretString;
 use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
 use std::path::Path;
 use thiserror::Error;
 use zeroize::Zeroize;
@@ -20,6 +22,15 @@ pub enum IdentityError {
 
     #[error("Failed to parse identity: {0}")]
     Parse(String),
+
+    #[error("Encryption error: {0}")]
+    Encryption(String),
+
+    #[error("Decryption error: {0}")]
+    Decryption(String),
+
+    #[error("Storage path error: {0}")]
+    StoragePath(String),
 
     #[error("Signature verification failed")]
     VerificationFailed,
@@ -111,7 +122,7 @@ impl NodeIdentity {
     }
 
     /// Save identity to file (encrypted with optional passphrase)
-    pub fn save(&self, path: &Path) -> Result<(), IdentityError> {
+    pub fn save(&self, path: &Path, passphrase: Option<&str>) -> Result<(), IdentityError> {
         use base64::Engine;
         let data = serde_json::json!({
             "version": 1,
@@ -124,16 +135,46 @@ impl NodeIdentity {
             .map_err(|e| IdentityError::Parse(e.to_string()))?;
 
         std::fs::create_dir_all(path.parent().unwrap_or(Path::new(".")))?;
-        std::fs::write(path, content)?;
+
+        if let Some(pass) = passphrase {
+            let encryptor = age::Encryptor::with_user_passphrase(SecretString::new(pass.to_string()));
+            let mut encrypted = vec![];
+            let mut writer = encryptor
+                .wrap_output(&mut encrypted)
+                .map_err(|e| IdentityError::Encryption(e.to_string()))?;
+            writer.write_all(content.as_bytes())?;
+            writer.finish()?;
+            std::fs::write(path, encrypted)?;
+        } else {
+            std::fs::write(path, content)?;
+        }
 
         Ok(())
     }
 
     /// Load identity from file
-    pub fn load(path: &Path) -> Result<Self, IdentityError> {
+    pub fn load(path: &Path, passphrase: Option<&str>) -> Result<Self, IdentityError> {
         use base64::Engine;
-        let content = std::fs::read_to_string(path)?;
-        let data: serde_json::Value = serde_json::from_str(&content)
+        let content = std::fs::read(path)?;
+
+        let decrypted = if let Some(pass) = passphrase {
+            let decryptor = match age::Decryptor::new(&content[..])
+                .map_err(|e| IdentityError::Decryption(e.to_string()))?
+            {
+                age::Decryptor::Passphrase(d) => d,
+                _ => return Err(IdentityError::Decryption("Expected passphrase".into())),
+            };
+            let mut decrypted = vec![];
+            let mut reader = decryptor
+                .decrypt(&SecretString::new(pass.to_string()), None)
+                .map_err(|e| IdentityError::Decryption(e.to_string()))?;
+            reader.read_to_end(&mut decrypted)?;
+            decrypted
+        } else {
+            content
+        };
+
+        let data: serde_json::Value = serde_json::from_slice(&decrypted)
             .map_err(|e| IdentityError::Parse(e.to_string()))?;
 
         let secret_key_b64 = data["secret_key"]
@@ -166,14 +207,7 @@ impl NodeIdentity {
     }
 }
 
-impl Drop for NodeIdentity {
-    fn drop(&mut self) {
-        // Zeroize sensitive data on drop
-        // Note: SigningKey doesn't implement Zeroize directly,
-        // but we clear our name at least
-        self.name.zeroize();
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -201,10 +235,117 @@ mod tests {
         let path = dir.path().join("identity.key");
 
         let identity = NodeIdentity::generate().unwrap();
-        identity.save(&path).unwrap();
+        identity.save(&path, None).unwrap();
 
-        let loaded = NodeIdentity::load(&path).unwrap();
+        let loaded = NodeIdentity::load(&path, None).unwrap();
         assert_eq!(identity.peer_id(), loaded.peer_id());
         assert_eq!(identity.name(), loaded.name());
+    }
+
+    #[test]
+    fn test_save_load_encrypted() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("identity.key");
+        let passphrase = "password";
+
+        let identity = NodeIdentity::generate().unwrap();
+        identity.save(&path, Some(passphrase)).unwrap();
+
+        let loaded = NodeIdentity::load(&path, Some(passphrase)).unwrap();
+        assert_eq!(identity.peer_id(), loaded.peer_id());
+        assert_eq!(identity.name(), loaded.name());
+    }
+
+    #[test]
+    fn test_load_encrypted_wrong_passphrase() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("identity.key");
+        let passphrase = "password";
+        let wrong_passphrase = "wrong_password";
+
+        let identity = NodeIdentity::generate().unwrap();
+        identity.save(&path, Some(passphrase)).unwrap();
+
+        let result = NodeIdentity::load(&path, Some(wrong_passphrase));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_default_paths() {
+        let identity_path = storage::get_default_identity_path().unwrap();
+        assert!(identity_path.ends_with(".edge-hive/identity.key"));
+
+        let config_path = storage::get_default_config_path().unwrap();
+        assert!(config_path.ends_with(".edge-hive/config.toml"));
+    }
+
+    #[test]
+    fn test_save_config() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+
+        let identity = NodeIdentity::generate().unwrap();
+        config::save_config(&identity, &path).unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        let config: config::Config = toml::from_str(&content).unwrap();
+        assert_eq!(config.node.name, identity.name());
+    }
+}
+
+pub mod storage {
+    use super::IdentityError;
+    use directories::BaseDirs;
+    use std::path::PathBuf;
+
+    /// Get the default path for the identity key file
+    pub fn get_default_identity_path() -> Result<PathBuf, IdentityError> {
+        let base_dirs = BaseDirs::new()
+            .ok_or_else(|| IdentityError::StoragePath("Home directory not found".into()))?;
+        let mut path = base_dirs.home_dir().to_path_buf();
+        path.push(".edge-hive");
+        path.push("identity.key");
+        Ok(path)
+    }
+
+    /// Get the default path for the configuration file
+    pub fn get_default_config_path() -> Result<PathBuf, IdentityError> {
+        let base_dirs = BaseDirs::new()
+            .ok_or_else(|| IdentityError::StoragePath("Home directory not found".into()))?;
+        let mut path = base_dirs.home_dir().to_path_buf();
+        path.push(".edge-hive");
+        path.push("config.toml");
+        Ok(path)
+    }
+}
+
+pub mod config {
+    use super::{IdentityError, NodeIdentity};
+    use serde::{Deserialize, Serialize};
+    use std::path::Path;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Config {
+        pub node: NodeConfig,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct NodeConfig {
+        pub name: String,
+    }
+
+    /// Save the node name to a config file
+    pub fn save_config(identity: &NodeIdentity, path: &Path) -> Result<(), IdentityError> {
+        let config = Config {
+            node: NodeConfig {
+                name: identity.name().to_string(),
+            },
+        };
+
+        let content = toml::to_string(&config)
+            .map_err(|e| IdentityError::Parse(e.to_string()))?;
+        std::fs::create_dir_all(path.parent().unwrap_or(Path::new(".")))?;
+        std::fs::write(path, content)?;
+        Ok(())
     }
 }

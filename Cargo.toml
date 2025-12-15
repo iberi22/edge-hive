@@ -90,7 +90,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Crypto
-ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+ed25519-dalek = { version = "2.2", features = ["rand_core"] }
 rand = "0.8"
 blake3 = "1.5"  # Fast hashing for node IDs
 

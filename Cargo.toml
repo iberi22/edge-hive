@@ -59,6 +59,7 @@ directories = "5.0"
 tempfile = "3.10"
 assert_cmd = "2.0"
 predicates = "3.1"
+reqwest = { version = "0.12", features = ["blocking"] }
 
 # Cross-compilation targets (GitHub Actions builds all)
 # Priority targets for Phase 1:
@@ -92,14 +93,24 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Crypto
 ed25519-dalek = { version = "2.2", features = ["rand_core"] }
 rand = "0.8"
-blake3 = "1.5"  # Fast hashing for node IDs
+blake3 = "1.5"                                                # Fast hashing for node IDs
 
 # P2P Networking
-libp2p = { version = "0.54", features = ["tokio", "mdns", "kad", "noise", "quic", "tcp", "dns", "identify", "yamux"] }
+libp2p = { version = "0.54", features = [
+    "tokio",
+    "mdns",
+    "kad",
+    "noise",
+    "quic",
+    "tcp",
+    "dns",
+    "identify",
+    "yamux",
+] }
 
 # Tor Integration (Arti - Pure Rust Tor)
 arti-client = "0.20"
-tor-hsservice = "0.20"  # Onion Services v3
+tor-hsservice = "0.20"                                    # Onion Services v3
 tor-rtcompat = { version = "0.20", features = ["tokio"] }
 
 # Database

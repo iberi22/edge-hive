@@ -1,6 +1,46 @@
 //! Tauri IPC Commands
 
 use crate::{CloudNode, NodeStatus, PeerInfo};
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SystemStats {
+    pub cpu_usage: f32,
+    pub total_memory: u64,
+    pub used_memory: u64,
+    pub total_swap: u64,
+    pub used_swap: u64,
+}
+
+/// Get system statistics (CPU, RAM)
+#[tauri::command]
+pub async fn get_system_stats() -> Result<SystemStats, String> {
+    let mut sys = System::new_with_specifics(
+        RefreshKind::new()
+            .with_cpu(CpuRefreshKind::everything())
+            .with_memory(),
+    );
+
+    // Wait a bit for CPU usage calculation
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    sys.refresh_cpu();
+    sys.refresh_memory();
+
+    let cpu_usage = sys.global_cpu_info().cpu_usage();
+    let total_memory = sys.total_memory();
+    let used_memory = sys.used_memory();
+    let total_swap = sys.total_swap();
+    let used_swap = sys.used_swap();
+
+    Ok(SystemStats {
+        cpu_usage,
+        total_memory,
+        used_memory,
+        total_swap,
+        used_swap,
+    })
+}
 
 /// Get the current node status
 #[tauri::command]

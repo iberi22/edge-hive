@@ -13,7 +13,7 @@ function Test-Feature {
         [string]$Name,
         [scriptblock]$Test
     )
-    
+
     Write-Host "Testing: $Name" -ForegroundColor Yellow
     try {
         & $Test
@@ -45,12 +45,12 @@ Test-Feature "Identity generation" {
     $testDir = ".\target\test-mvp"
     Remove-Item -Recurse -Force $testDir -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force -Path $testDir | Out-Null
-    
+
     $output = & .\target\debug\edge-hive.exe --config-dir $testDir init 2>&1 | Out-String
     if ($output -notmatch "Identity created") {
         throw "Identity not created"
     }
-    
+
     if (-not (Test-Path "$testDir\identity.key")) {
         throw "Identity file not found"
     }
@@ -59,14 +59,14 @@ Test-Feature "Identity generation" {
 # Test 4: Server startup (quick check)
 Test-Feature "HTTP Server startup" {
     $testDir = ".\target\test-mvp"
-    
+
     $job = Start-Job -ScriptBlock {
         param($exe, $dir)
         & $exe --config-dir $dir serve --port 9999 2>&1
     } -ArgumentList (Resolve-Path ".\target\debug\edge-hive.exe"), (Resolve-Path $testDir)
-    
+
     Start-Sleep -Seconds 3
-    
+
     try {
         $response = Invoke-WebRequest -Uri "http://127.0.0.1:9999/health" -TimeoutSec 2
         if ($response.StatusCode -ne 200) {
@@ -81,18 +81,18 @@ Test-Feature "HTTP Server startup" {
 # Test 5: Discovery feature
 Test-Feature "Discovery flag acceptance" {
     $testDir = ".\target\test-mvp"
-    
+
     $job = Start-Job -ScriptBlock {
         param($exe, $dir)
         & $exe --config-dir $dir serve --port 9998 --discovery 2>&1 | Out-String
     } -ArgumentList (Resolve-Path ".\target\debug\edge-hive.exe"), (Resolve-Path $testDir)
-    
+
     Start-Sleep -Seconds 3
     $output = Receive-Job $job
-    
+
     Stop-Job $job -ErrorAction SilentlyContinue
     Remove-Job $job -Force -ErrorAction SilentlyContinue
-    
+
     if ($output -notmatch "Starting discovery service") {
         throw "Discovery service not started"
     }
@@ -101,18 +101,18 @@ Test-Feature "Discovery flag acceptance" {
 # Test 6: Tor flag acceptance
 Test-Feature "Tor flag acceptance" {
     $testDir = ".\target\test-mvp"
-    
+
     $job = Start-Job -ScriptBlock {
         param($exe, $dir)
         & $exe --config-dir $dir serve --port 9997 --tor 2>&1 | Out-String
     } -ArgumentList (Resolve-Path ".\target\debug\edge-hive.exe"), (Resolve-Path $testDir)
-    
+
     Start-Sleep -Seconds 3
     $output = Receive-Job $job
-    
+
     Stop-Job $job -ErrorAction SilentlyContinue
     Remove-Job $job -Force -ErrorAction SilentlyContinue
-    
+
     if ($output -notmatch "Tor") {
         Write-Host "  ⚠️  Tor initialization might need more time" -ForegroundColor Yellow
     }

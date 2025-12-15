@@ -20,6 +20,7 @@ project: edge-hive-app
 ## 1. Current State Assessment
 
 The current application (`app/`) is in a **skeleton state**.
+
 - **Framework:** Astro + Svelte + Tailwind CSS.
 - **Layout:** Basic Sidebar + Header + Main Content.
 - **Styling:** Minimal Tailwind utility classes.
@@ -41,42 +42,45 @@ The current application (`app/`) is in a **skeleton state**.
 ## 3. Improvement Plan
 
 ### Phase 1: Foundation & Navigation (The "Shell")
+
 **Goal:** Create a professional-looking admin shell.
 
-1.  **Enhanced Sidebar (`Sidebar.svelte`):**
-    -   **Icons:** Integrate `@tabler/icons-svelte` for every menu item.
-    -   **Active State:** Highlight the current page based on URL.
-    -   **Logo:** Add a proper branding area at the top.
-    -   **User Profile:** Add a user menu at the bottom.
-    -   **Responsive:** Mobile drawer support.
+1. **Enhanced Sidebar (`Sidebar.svelte`):**
+    - **Icons:** Integrate `@tabler/icons-svelte` for every menu item.
+    - **Active State:** Highlight the current page based on URL.
+    - **Logo:** Add a proper branding area at the top.
+    - **User Profile:** Add a user menu at the bottom.
+    - **Responsive:** Mobile drawer support.
 
-2.  **Header (`Header.svelte`):**
-    -   **Breadcrumbs:** Show current location path.
-    -   **System Status:** Small indicator (Green/Red) for backend connection.
-    -   **Actions:** Quick actions (e.g., "Restart Node").
+2. **Header (`Header.svelte`):**
+    - **Breadcrumbs:** Show current location path.
+    - **System Status:** Small indicator (Green/Red) for backend connection.
+    - **Actions:** Quick actions (e.g., "Restart Node").
 
 ### Phase 2: Dashboard & Visualization
+
 **Goal:** Provide immediate value upon login.
 
-1.  **Stats Cards Component:**
-    -   Create a reusable `StatsCard.svelte`.
-    -   Display: CPU Usage, RAM Usage, Disk Space, Network Traffic.
-    -   Use Sparklines (via D3 or simple SVG) for trends.
+1. **Stats Cards Component:**
+    - Create a reusable `StatsCard.svelte`.
+    - Display: CPU Usage, RAM Usage, Disk Space, Network Traffic.
+    - Use Sparklines (via D3 or simple SVG) for trends.
 
-2.  **Node List View:**
-    -   Table/Grid view for Nodes.
-    -   Status badges (Online, Offline, Syncing).
-    -   Action menu (three dots) for operations.
+2. **Node List View:**
+    - Table/Grid view for Nodes.
+    - Status badges (Online, Offline, Syncing).
+    - Action menu (three dots) for operations.
 
 ### Phase 3: Advanced Components (Glassmorphism & Polish)
+
 **Goal:** Modernize the aesthetic.
 
-1.  **Glassmorphism:**
-    -   Use `bg-gray-800/50 backdrop-blur-md` for panels.
-    -   Add subtle borders `border-white/10`.
+1. **Glassmorphism:**
+    - Use `bg-gray-800/50 backdrop-blur-md` for panels.
+    - Add subtle borders `border-white/10`.
 
-2.  **Terminal Integration:**
-    -   Style the `xterm.js` container to look like a native terminal window.
+2. **Terminal Integration:**
+    - Style the `xterm.js` container to look like a native terminal window.
 
 ## 4. Proposed Component Structure
 
@@ -100,7 +104,7 @@ src/
 
 ## 5. Action Items (Immediate)
 
-1.  [ ] Install `@tabler/icons-svelte` (Already in package.json).
-2.  [ ] Refactor `Sidebar.svelte` to use an array of route objects with icons.
-3.  [ ] Create `Card.svelte` base component.
-4.  [ ] Implement "Glassmorphism" utility classes in `global.css` or Tailwind config.
+1. [ ] Install `@tabler/icons-svelte` (Already in package.json).
+2. [ ] Refactor `Sidebar.svelte` to use an array of route objects with icons.
+3. [ ] Create `Card.svelte` base component.
+4. [ ] Implement "Glassmorphism" utility classes in `global.css` or Tailwind config.

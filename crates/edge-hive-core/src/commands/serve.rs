@@ -150,12 +150,12 @@ pub async fn run(
         });
 
         println!("✅ Discovery: Enabled (mDNS + DHT)");
-        
+
         // Create discovery service
         Arc::new(RwLock::new(DiscoveryService::new()?))
     } else {
         println!("⏸️  Discovery: Disabled");
-        
+
         // Create discovery service anyway (required by server)
         Arc::new(RwLock::new(DiscoveryService::new()?))
     };
@@ -189,7 +189,7 @@ pub async fn run(
 
     // Create message store
     let message_store = Arc::new(RwLock::new(HashMap::new()));
-    
+
     // Run the HTTP server
     server::run(args.port, discovery_svc, message_store, data_dir.to_path_buf()).await?;
 

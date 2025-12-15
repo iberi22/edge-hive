@@ -51,6 +51,7 @@ pub fn run() {
             commands::get_cloud_nodes,
             commands::provision_cloud_node,
             commands::create_checkout_session,
+            commands::get_system_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

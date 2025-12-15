@@ -12,6 +12,14 @@ export default {
         accent: '#8b5cf6', // violet-500
         danger: '#ef4444', // red-500
         success: '#22c55e', // green-500
+
+        // Glassmorphism colors
+        glass: {
+          100: 'rgba(255, 255, 255, 0.05)',
+          200: 'rgba(255, 255, 255, 0.1)',
+          300: 'rgba(255, 255, 255, 0.15)',
+          border: 'rgba(255, 255, 255, 0.08)',
+        }
       },
       backdropBlur: {
         xs: '2px',

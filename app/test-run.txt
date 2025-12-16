@@ -1,0 +1,477 @@
+
+> edge-hive-app@0.1.0 test
+> vitest --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90mE:/scripts-python/termux-private-edge-server/app[39m
+
+ [32mÔ£ô[39m src/test/mcp-client.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [31mÔØ»[39m src/test/dashboard.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m       [31m├ù[31m has default values[39m[32m 11[2mms[22m[39m
+[31m       [31m├ù[31m updates stats on success[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m handles errors gracefully[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m updates nodes list on success[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m filters nodes by status[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m refreshes stats every 5 seconds[39m[32m 1[2mms[22m[39m
+[31m       [31m├ù[31m stops auto-refresh on stopAutoRefresh[39m[32m 1[2mms[22m[39m
+ [31mÔØ»[39m src/test/StatsCard.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 18[2mms[22m[39m
+[31m     [31m├ù[31m renders title and value correctly[39m[32m 11[2mms[22m[39m
+[31m     [31m├ù[31m displays trend indicator when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m shows negative trend in red[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m applies correct color classes[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m handles missing trend gracefully[39m[32m 1[2mms[22m[39m
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+ [31mÔØ»[39m src/test/Terminal.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 60[2mms[22m[39m
+[31m     [31m├ù[31m renders terminal container[39m[32m 13[2mms[22m[39m
+[31m     [31m├ù[31m displays terminal header with window controls[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m spawns PTY on mount[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m listens for terminal output events[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m creates xterm instance with correct theme[39m[32m 39[2mms[22m[39m
+[31m     [31m├ù[31m loads addons (Fit and WebLinks)[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m cleans up on destroy[39m[32m 1[2mms[22m[39m
+ [31mÔØ»[39m src/test/NodeList.test.ts [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m├ù[31m renders all nodes[39m[32m 12[2mms[22m[39m
+[31m     [31m├ù[31m displays node IP addresses[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m shows correct status badges[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m displays resource usage[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m handles empty node list[39m[32m 1[2mms[22m[39m
+[31m     [31m├ù[31m renders table headers[39m[32m 1[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 25 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > initial state > has default values
+AssertionError: expected undefined to deeply equal { Object (stats, nodes, ...) }
+
+- Expected: 
+{
+  "error": null,
+  "loading": false,
+  "nodes": [],
+  "stats": {
+    "active_nodes": 0,
+    "cpu_usage": 0,
+    "total_memory": 0,
+    "total_tunnels": 0,
+    "used_memory": 0,
+  },
+}
+
++ Received: 
+undefined
+
+ ÔØ» src/test/dashboard.test.ts:27:24
+     25|          const state = get(dashboardStore);
+     26| 
+     27|          expect(state).toEqual({
+       |                        ^
+     28|             stats: {
+     29|                cpu_usage: 0,
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > fetchStats > updates stats on success
+TypeError: Cannot read properties of undefined (reading 'fetchStats')
+ ÔØ» src/test/dashboard.test.ts:54:25
+     52|          (mcpClient.getDashboardStats as any).mockResolvedValue(mockStÔÇª
+     53| 
+     54|          dashboardStore.fetchStats();
+       |                         ^
+     55| 
+     56|          // Loading should be true immediately
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[2/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > fetchStats > handles errors gracefully
+TypeError: Cannot read properties of undefined (reading 'fetchStats')
+ ÔØ» src/test/dashboard.test.ts:71:25
+     69|          (mcpClient.getDashboardStats as any).mockRejectedValue(mockErÔÇª
+     70| 
+     71|          dashboardStore.fetchStats();
+       |                         ^
+     72| 
+     73|          await vi.runAllTimersAsync();
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[3/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > fetchNodes > updates nodes list on success
+TypeError: Cannot read properties of undefined (reading 'fetchNodes')
+ ÔØ» src/test/dashboard.test.ts:90:25
+     88|          (mcpClient.listNodes as any).mockResolvedValue(mockNodes);
+     89| 
+     90|          dashboardStore.fetchNodes();
+       |                         ^
+     91| 
+     92|          await vi.runAllTimersAsync();
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[4/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > fetchNodes > filters nodes by status
+TypeError: Cannot read properties of undefined (reading 'fetchNodes')
+ ÔØ» src/test/dashboard.test.ts:106:25
+    104|          (mcpClient.listNodes as any).mockResolvedValue(mockActiveNodeÔÇª
+    105| 
+    106|          dashboardStore.fetchNodes('active');
+       |                         ^
+    107| 
+    108|          await vi.runAllTimersAsync();
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[5/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > auto-refresh > refreshes stats every 5 seconds
+TypeError: Cannot read properties of undefined (reading 'startAutoRefresh')
+ ÔØ» src/test/dashboard.test.ts:124:25
+    122|          });
+    123| 
+    124|          dashboardStore.startAutoRefresh();
+       |                         ^
+    125| 
+    126|          // Initial call
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[6/25]ÔÄ»
+
+ FAIL  src/test/dashboard.test.ts > Dashboard Store > auto-refresh > stops auto-refresh on stopAutoRefresh
+TypeError: Cannot read properties of undefined (reading 'startAutoRefresh')
+ ÔØ» src/test/dashboard.test.ts:151:25
+    149|          });
+    150| 
+    151|          dashboardStore.startAutoRefresh();
+       |                         ^
+    152|          dashboardStore.stopAutoRefresh();
+    153| 
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[7/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > renders all nodes
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:38:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[8/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > displays node IP addresses
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:46:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[9/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > shows correct status badges
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:54:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[10/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > displays resource usage
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:71:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[11/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > handles empty node list
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:80:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[12/25]ÔÄ»
+
+ FAIL  src/test/NodeList.test.ts > NodeList > renders table headers
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/NodeList.test.ts:86:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[13/25]ÔÄ»
+
+ FAIL  src/test/StatsCard.test.ts > StatsCard > renders title and value correctly
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/StatsCard.test.ts:11:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[14/25]ÔÄ»
+
+ FAIL  src/test/StatsCard.test.ts > StatsCard > displays trend indicator when provided
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/StatsCard.test.ts:26:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[15/25]ÔÄ»
+
+ FAIL  src/test/StatsCard.test.ts > StatsCard > shows negative trend in red
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/StatsCard.test.ts:41:29
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[16/25]ÔÄ»
+
+ FAIL  src/test/StatsCard.test.ts > StatsCard > applies correct color classes
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/StatsCard.test.ts:58:29
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[17/25]ÔÄ»
+
+ FAIL  src/test/StatsCard.test.ts > StatsCard > handles missing trend gracefully
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/StatsCard.test.ts:73:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[18/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > renders terminal container
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» Module.render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/Terminal.test.ts:22:29
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[19/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > displays terminal header with window controls
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» Module.render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/Terminal.test.ts:29:29
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[20/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > spawns PTY on mount
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» Module.render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/Terminal.test.ts:39:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[21/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > listens for terminal output events
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» Module.render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/Terminal.test.ts:47:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[22/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > creates xterm instance with correct theme
+Svelte error: lifecycle_function_unavailable
+`mount(...)` is not available on the server
+https://svelte.dev/e/lifecycle_function_unavailable
+ ÔØ» Module.lifecycle_function_unavailable node_modules/svelte/src/internal/server/errors.js:101:16
+     99|  */
+    100| export function lifecycle_function_unavailable(name) {
+    101|  const error = new Error(`lifecycle_function_unavailable\n\`${name}(..ÔÇª
+       |                ^
+    102| 
+    103|  error.name = 'Svelte error';
+ ÔØ» Module.mount node_modules/svelte/src/index-server.js:25:4
+ ÔØ» mountModern node_modules/@testing-library/svelte/src/core/mount.js:20:28
+ ÔØ» mount node_modules/@testing-library/svelte/src/core/mount.js:82:44
+ ÔØ» Module.render node_modules/@testing-library/svelte/src/pure.js:76:49
+ ÔØ» src/test/Terminal.test.ts:57:7
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[23/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > loads addons (Fit and WebLinks)
+TypeError: XTerm.mockReturnValue is not a function
+ ÔØ» src/test/Terminal.test.ts:83:22
+     81| 
+     82|       const { Terminal: XTerm } = require('xterm');
+     83|       (XTerm as any).mockReturnValue(mockTerminal);
+       |                      ^
+     84| 
+     85|       render(Terminal);
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[24/25]ÔÄ»
+
+ FAIL  src/test/Terminal.test.ts > Terminal > cleans up on destroy
+TypeError: XTerm.mockReturnValue is not a function
+ ÔØ» src/test/Terminal.test.ts:104:22
+    102| 
+    103|       const { Terminal: XTerm } = require('xterm');
+    104|       (XTerm as any).mockReturnValue(mockTerminal);
+       |                      ^
+    105| 
+    106|       const { unmount } = render(Terminal);
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[25/25]ÔÄ»
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[31m25 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (32)[39m
+[2m   Start at [22m 19:20:30
+[2m   Duration [22m 49.58s[2m (transform 30.04s, setup 1.06s, import 52.41s, tests 138ms, environment 5.02s)[22m
+

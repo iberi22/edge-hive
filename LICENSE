@@ -10,7 +10,19 @@ Licensor's Website:       https://edge-hive.io
 Software:                 Edge Hive Core and Mobile App
 Change Date:              2029-12-14
 Change License:           Apache License, Version 2.0
-Additional Use Grant:     You may use the Software for non-commercial purposes, including personal use, educational use, and internal testing. You may NOT use the Software to provide a managed "Edge Hive-as-a-Service" or similar commercial offering to third parties.
+Additional Use Grant:     You may use the Software ONLY for:
+                          (1) Personal, non-commercial use
+                          (2) Educational and academic research
+                          (3) Internal testing and development
+                          
+                          You may NOT:
+                          (1) Use the Software in any commercial product or service
+                          (2) Provide the Software as a managed service to third parties
+                          (3) Offer hosting, SaaS, or similar commercial services using this Software
+                          (4) Create derivative commercial products based on this Software
+                          (5) Use the Software in any business model similar to Edge Hive
+                          
+                          Commercial licenses are available from the Licensor for businesses wishing to use this Software commercially.
 
 Terms
 

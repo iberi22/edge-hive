@@ -6,7 +6,7 @@
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
 [![SurrealDB](https://img.shields.io/badge/SurrealDB-2.0-pink?logo=surrealdb)](https://surrealdb.com/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue?logo=tauri)](https://tauri.app/)
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-BUSL--1.1-blue)](LICENSE)
 
 ---
 

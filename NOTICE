@@ -1,0 +1,69 @@
+Edge Hive - Commercial Use Notice
+==================================
+
+Copyright (c) 2025 Edge Hive Developers
+All Rights Reserved
+
+LICENSING SUMMARY
+-----------------
+
+This software is licensed under the Business Source License 1.1 (BUSL-1.1).
+
+WHAT YOU CAN DO (Free):
+  ✅ Use for personal projects
+  ✅ Use for education and research
+  ✅ Study and modify the source code
+  ✅ Contribute improvements back to the project
+  ✅ Deploy for internal/testing purposes
+
+WHAT YOU CANNOT DO (Requires Commercial License):
+  ❌ Use in any commercial product or service
+  ❌ Offer as SaaS, hosting, or managed service
+  ❌ Create competing commercial products
+  ❌ Build business models similar to Edge Hive
+  ❌ Redistribute in commercial products
+
+FUTURE LICENSE CHANGE
+----------------------
+
+On 2029-12-14 (or 4 years after first public release, whichever is earlier),
+this software will automatically convert to Apache License 2.0, allowing
+unrestricted commercial use.
+
+COMMERCIAL LICENSES
+-------------------
+
+Businesses wishing to use Edge Hive commercially before the Change Date
+can obtain a commercial license by contacting:
+
+  📧 licensing@edge-hive.io
+  🌐 https://edge-hive.io/licensing
+
+TRADEMARKS
+----------
+
+"Edge Hive" and the Edge Hive logo are trademarks of Edge Hive Developers.
+Use of these trademarks requires explicit permission.
+
+PATENTS
+-------
+
+Mexico does not allow software-only patents. This software is protected by:
+  - Copyright (automatic upon creation)
+  - Business Source License (contractual protection)
+  - Trademark registration (pending/planned)
+
+ENFORCEMENT
+-----------
+
+Violation of this license may result in:
+  - Immediate license termination
+  - Legal action for damages
+  - Permanent ban from all Edge Hive services
+
+For questions about licensing, contact: legal@edge-hive.io
+
+---
+
+Full license text: see LICENSE file
+License source: https://mariadb.com/bsl11/

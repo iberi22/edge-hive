@@ -4,6 +4,7 @@ use edge_hive_core::server;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
 use edge_hive_discovery::DiscoveryService;
+use edge_hive_auth;
 use futures::StreamExt;
 use libp2p::{
     identify, identity, kad, mdns, noise,
@@ -190,8 +191,26 @@ pub async fn run(
     // Create message store
     let message_store = Arc::new(RwLock::new(HashMap::new()));
 
+    // Load or generate JWT secret
+    let jwt_secret_path = data_dir.join("jwt_secret.key");
+    let jwt_secret = if jwt_secret_path.exists() {
+        std::fs::read(&jwt_secret_path)?
+    } else {
+        info!("Generating new JWT secret...");
+        use edge_hive_auth::jwt::JwtKeys;
+        let secret = JwtKeys::generate_secret();
+        std::fs::write(&jwt_secret_path, &secret)?;
+        secret
+    };
+
     // Run the HTTP server
-    server::run(args.port, discovery_svc, message_store, data_dir.to_path_buf()).await?;
+    server::run(
+        args.port,
+        discovery_svc,
+        message_store,
+        data_dir.to_path_buf(),
+        Some(jwt_secret),
+    ).await?;
 
     // Cleanup
     if let Some(mut t) = tunnel {

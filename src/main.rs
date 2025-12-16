@@ -237,7 +237,18 @@ async fn handle_start(port: u16, _tor: bool, discovery: bool, bootstrap_peer: Op
     };
     let message_store = Arc::new(RwLock::new(messages));
 
-    server::run(port, discovery_svc, message_store, data_dir).await?;
+    // Load or generate JWT secret
+    let jwt_secret_path = data_dir.join("jwt_secret.key");
+    let jwt_secret = if jwt_secret_path.exists() {
+        fs::read(&jwt_secret_path)?
+    } else {
+        use edge_hive_auth::jwt::JwtKeys;
+        let secret = JwtKeys::generate_secret();
+        fs::write(&jwt_secret_path, &secret)?;
+        secret
+    };
+
+    server::run(port, discovery_svc, message_store, data_dir, Some(jwt_secret)).await?;
 
     Ok(())
 }

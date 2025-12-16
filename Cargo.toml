@@ -10,6 +10,7 @@ members = [
     "crates/edge-hive-billing",
     "crates/edge-hive-cloud",
     "crates/edge-hive-mcp",
+    "crates/edge-hive-auth",
     "app/src-tauri",
 ]
 
@@ -54,6 +55,7 @@ tokio = { workspace = true, features = ["full"] }
 edge-hive-identity.workspace = true
 edge-hive-core = { path = "crates/edge-hive-core" }
 edge-hive-discovery = { path = "crates/edge-hive-discovery" }
+edge-hive-auth = { path = "crates/edge-hive-auth", features = ["server"] }
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

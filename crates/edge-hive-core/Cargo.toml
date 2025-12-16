@@ -46,6 +46,7 @@ edge-hive-identity.workspace = true
 edge-hive-discovery.workspace = true
 edge-hive-tunnel.workspace = true
 edge-hive-db.workspace = true
+edge-hive-auth = { path = "../edge-hive-auth", features = ["server"] }
 
 # P2P Networking
 libp2p.workspace = true

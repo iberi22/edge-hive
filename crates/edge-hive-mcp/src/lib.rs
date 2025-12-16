@@ -1,5 +1,5 @@
 //! Edge Hive MCP Server
-//! 
+//!
 //! Model Context Protocol server that exposes Edge Hive admin operations as tools.
 
 use serde::{Deserialize, Serialize};
@@ -263,7 +263,7 @@ impl MCPServer {
             }
             "admin_list_nodes" => {
                 let nodes = self.nodes.read().await.clone();
-                
+
                 // Filter by status if provided
                 let filtered_nodes = if let Some(args) = arguments {
                     if let Some(status_filter) = args.get("status_filter").and_then(|v| v.as_str()) {
@@ -371,7 +371,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_dashboard_stats() {
         let server = MCPServer::new();
-        
+
         // Update stats first
         server.update_stats(DashboardStats {
             cpu_usage: 45.5,
@@ -401,7 +401,7 @@ mod tests {
     #[tokio::test]
     async fn test_list_and_filter_nodes() {
         let server = MCPServer::new();
-        
+
         // Add test nodes
         server.update_nodes(vec![
             Node {
@@ -461,7 +461,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_node_status() {
         let server = MCPServer::new();
-        
+
         // Add test node
         server.update_nodes(vec![
             Node {
@@ -489,7 +489,7 @@ mod tests {
 
         let response = server.handle_request(request).await;
         assert!(response.error.is_none());
-        
+
         // Verify status changed
         let nodes = server.nodes.read().await;
         assert_eq!(nodes[0].status, "maintenance");

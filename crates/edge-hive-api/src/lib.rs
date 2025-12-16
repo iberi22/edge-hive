@@ -14,7 +14,7 @@
 //!
 //! ## Routes
 //!
-//! - `/health` - Health check
+//! - `/api/v1/health` - Health check
 //! - `/api/v1/data/*` - Database operations
 //! - `/api/v1/auth/*` - Authentication
 //! - `/api/v1/edge/*` - Edge functions (WASM)
@@ -23,6 +23,7 @@
 
 use axum::{
     routing::{get, post, put, delete},
+    Extension,
     Router,
 };
 use tower_http::{
@@ -43,7 +44,7 @@ pub fn create_router(state: ApiState) -> Router {
 
     // Core routes
     let health_routes = Router::new()
-        .route("/health", get(handlers::health::health_check))
+        .route("/api/v1/health", get(handlers::health::health_check))
         .route("/api/v1/info", get(handlers::health::node_info));
 
     // Database routes (auto-cached)
@@ -88,20 +89,24 @@ pub fn create_router(state: ApiState) -> Router {
                 .allow_headers(Any),
         )
         .layer(TraceLayer::new_for_http())
-        .with_state(state)
+        .layer(Extension(state))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use edge_hive_cache::CacheConfig;
+    use tempfile::tempdir;
 
     #[tokio::test]
     async fn test_router_creation() {
         let cache = edge_hive_cache::CacheService::new(CacheConfig::default()).await;
-        let state = ApiState::new(cache);
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = std::sync::Arc::new(edge_hive_db::DatabaseService::new(&db_path).await.unwrap());
+        let state = ApiState::new_minimal(cache, db);
         let router = create_router(state);
-        
+
         // Router should be created without panic
         assert!(true);
     }

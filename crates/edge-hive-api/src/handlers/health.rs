@@ -1,10 +1,6 @@
 //! Health check handlers
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::Extension, response::Json};
 use serde::{Deserialize, Serialize};
 use crate::state::ApiState;
 
@@ -30,7 +26,7 @@ pub async fn health_check() -> Json<HealthResponse> {
 }
 
 /// Node information endpoint
-pub async fn node_info(State(_state): State<ApiState>) -> Json<NodeInfo> {
+pub async fn node_info(Extension(_state): Extension<ApiState>) -> Json<NodeInfo> {
     Json(NodeInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         cache_enabled: true,

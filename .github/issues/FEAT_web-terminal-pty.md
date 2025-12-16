@@ -9,9 +9,11 @@ assignees: []
 ---
 
 ## Description
+
 Connect the frontend `xterm.js` component to a real backend shell using Tauri.
 
 ## Tasks
+
 - [x] Add `portable-pty` crate to `src-tauri` ✅
 - [x] Implement a Tauri command to spawn a shell (bash/zsh/powershell) ✅
 - [x] Create Event channel to stream stdin/stdout between frontend and backend ✅
@@ -23,10 +25,13 @@ Connect the frontend `xterm.js` component to a real backend shell using Tauri.
 - [ ] Test on Android/Termux environment - Future
 
 ## ✅ Completion Status
+
 **COMPLETED** (2025-12-15)
 
-### What was implemented:
+### What was implemented
+
 **Frontend:**
+
 - Terminal.svelte component with xterm.js, FitAddon, WebLinksAddon
 - Custom dark theme matching dashboard aesthetic
 - Glassmorphism styling with window controls
@@ -35,6 +40,7 @@ Connect the frontend `xterm.js` component to a real backend shell using Tauri.
 - Terminal icon added to sidebar navigation
 
 **Backend:**
+
 - portable-pty integration for cross-platform PTY
 - terminal_spawn: Spawns PowerShell (Windows) or sh (Linux/macOS)
 - terminal_write: Sends input to PTY
@@ -43,18 +49,22 @@ Connect the frontend `xterm.js` component to a real backend shell using Tauri.
 - TerminalState management with Arc<Mutex<T>>
 
 **Features:**
+
 - ✅ Real-time bidirectional communication
 - ✅ Interactive shell access from web UI
 - ✅ Cross-platform (Windows/Linux/macOS)
 - ✅ Responsive design
 - ✅ Glassmorphism aesthetic
 
-### Commits:
+### Commits
+
 - `90507a7` - feat(terminal): implement web terminal with xterm.js + PTY
 
-### Next Phase:
+### Next Phase
+
 - Authentication/authorization for terminal access
 - Android/Termux testing and optimization
 
 ## Goal
+
 Allow users to manage the VPS/Termux environment directly from the web UI.

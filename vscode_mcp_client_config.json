@@ -1,66 +1,78 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "title": "Edge Hive MCP Client Configuration",
-  "description": "Configuration for connecting VS Code (or other MCP clients) to Edge Hive nodes via HTTPS with OAuth2 authentication",
-  "type": "object",
-  "mcpServers": {
-    "edge-hive-local": {
-      "url": "https://localhost:8080/mcp",
-      "transport": "https",
-      "authentication": {
-        "type": "oauth2-client-credentials",
-        "tokenEndpoint": "https://localhost:8080/mcp/auth/token",
-        "clientId": "${EDGE_HIVE_CLIENT_ID}",
-        "clientSecret": "${EDGE_HIVE_CLIENT_SECRET}",
-        "scopes": ["mcp:read", "mcp:call", "mcp:resources"]
+   "$schema": "https://json-schema.org/draft-07/schema#",
+   "title": "Edge Hive MCP Client Configuration",
+   "description": "Configuration for connecting VS Code (or other MCP clients) to Edge Hive nodes via HTTPS with OAuth2 authentication",
+   "type": "object",
+   "mcpServers": {
+      "edge-hive-local": {
+         "url": "https://localhost:8080/mcp",
+         "transport": "https",
+         "authentication": {
+            "type": "oauth2-client-credentials",
+            "tokenEndpoint": "https://localhost:8080/mcp/auth/token",
+            "clientId": "${EDGE_HIVE_CLIENT_ID}",
+            "clientSecret": "${EDGE_HIVE_CLIENT_SECRET}",
+            "scopes": [
+               "mcp:read",
+               "mcp:call",
+               "mcp:resources"
+            ]
+         },
+         "headers": {
+            "User-Agent": "VSCode-MCP-Client/1.0",
+            "Accept": "application/json"
+         },
+         "timeout": 30000,
+         "retries": 3
       },
-      "headers": {
-        "User-Agent": "VSCode-MCP-Client/1.0",
-        "Accept": "application/json"
+      "edge-hive-node1-docker": {
+         "url": "https://172.20.0.10:8080/mcp",
+         "transport": "https",
+         "authentication": {
+            "type": "oauth2-client-credentials",
+            "tokenEndpoint": "https://172.20.0.10:8080/mcp/auth/token",
+            "clientId": "${EDGE_HIVE_CLIENT_ID}",
+            "clientSecret": "${EDGE_HIVE_CLIENT_SECRET}",
+            "scopes": [
+               "mcp:read",
+               "mcp:call",
+               "mcp:resources"
+            ]
+         }
       },
-      "timeout": 30000,
-      "retries": 3
-    },
-    "edge-hive-node1-docker": {
-      "url": "https://172.20.0.10:8080/mcp",
-      "transport": "https",
-      "authentication": {
-        "type": "oauth2-client-credentials",
-        "tokenEndpoint": "https://172.20.0.10:8080/mcp/auth/token",
-        "clientId": "${EDGE_HIVE_CLIENT_ID}",
-        "clientSecret": "${EDGE_HIVE_CLIENT_SECRET}",
-        "scopes": ["mcp:read", "mcp:call", "mcp:resources"]
+      "edge-hive-production": {
+         "url": "https://mcp.edge-hive.example.com/mcp",
+         "transport": "https",
+         "authentication": {
+            "type": "oauth2-client-credentials",
+            "tokenEndpoint": "https://mcp.edge-hive.example.com/mcp/auth/token",
+            "clientId": "${EDGE_HIVE_PROD_CLIENT_ID}",
+            "clientSecret": "${EDGE_HIVE_PROD_CLIENT_SECRET}",
+            "scopes": [
+               "mcp:read",
+               "mcp:call",
+               "mcp:resources"
+            ]
+         },
+         "headers": {
+            "X-Node-Region": "us-east-1"
+         }
       }
-    },
-    "edge-hive-production": {
-      "url": "https://mcp.edge-hive.example.com/mcp",
+   },
+   "defaults": {
       "transport": "https",
-      "authentication": {
-        "type": "oauth2-client-credentials",
-        "tokenEndpoint": "https://mcp.edge-hive.example.com/mcp/auth/token",
-        "clientId": "${EDGE_HIVE_PROD_CLIENT_ID}",
-        "clientSecret": "${EDGE_HIVE_PROD_CLIENT_SECRET}",
-        "scopes": ["mcp:read", "mcp:call", "mcp:resources"]
-      },
-      "headers": {
-        "X-Node-Region": "us-east-1"
-      }
-    }
-  },
-  "defaults": {
-    "transport": "https",
-    "tlsVerify": true,
-    "tokenRefreshThreshold": 300,
-    "cacheTokens": true
-  },
-  "examples": {
-    "note": "To use this configuration:",
-    "steps": [
-      "1. Set environment variables EDGE_HIVE_CLIENT_ID and EDGE_HIVE_CLIENT_SECRET",
-      "2. Obtain credentials by running: edge-hive auth client create --name vscode-client",
-      "3. Add this file path to your MCP client settings",
-      "4. For VS Code Copilot, add to settings.json:",
-      "   \"github.copilot.advanced\": { \"mcp\": { \"configPath\": \"./vscode_mcp_client_config.json\" } }"
-    ]
-  }
+      "tlsVerify": true,
+      "tokenRefreshThreshold": 300,
+      "cacheTokens": true
+   },
+   "examples": {
+      "note": "To use this configuration:",
+      "steps": [
+         "1. Set environment variables EDGE_HIVE_CLIENT_ID and EDGE_HIVE_CLIENT_SECRET",
+         "2. Obtain credentials by running: edge-hive auth client create --name vscode-client",
+         "3. Add this file path to your MCP client settings",
+         "4. For VS Code Copilot, add to settings.json:",
+         "   \"github.copilot.advanced\": { \"mcp\": { \"configPath\": \"./vscode_mcp_client_config.json\" } }"
+      ]
+   }
 }

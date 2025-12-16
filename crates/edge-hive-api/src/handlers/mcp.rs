@@ -1,7 +1,7 @@
 //! MCP JSON-RPC handler
 
 use axum::{
-    extract::State,
+    extract::Extension,
     http::StatusCode,
     response::Json,
 };
@@ -10,7 +10,7 @@ use crate::state::ApiState;
 
 /// MCP JSON-RPC endpoint
 pub async fn json_rpc(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
     // Placeholder: would forward to edge-hive-mcp

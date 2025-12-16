@@ -33,9 +33,11 @@ crates/edge-hive-core/
 ## 🔧 Endpoints Implementados
 
 ### POST /mcp/auth/token
+
 **OAuth2 Client Credentials Token Endpoint**
 
 Request:
+
 ```json
 {
   "grant_type": "client_credentials",
@@ -46,6 +48,7 @@ Request:
 ```
 
 Response:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -56,9 +59,11 @@ Response:
 ```
 
 ### POST /mcp/auth/clients
+
 **Create New OAuth2 Client (Admin)**
 
 Request:
+
 ```json
 {
   "name": "vscode-client",
@@ -67,6 +72,7 @@ Request:
 ```
 
 Response:
+
 ```json
 {
   "client_id": "cli_abc123...",
@@ -77,9 +83,11 @@ Response:
 ```
 
 ### GET /mcp/auth/clients
+
 **List All OAuth2 Clients**
 
 Response:
+
 ```json
 {
   "clients": [
@@ -95,6 +103,7 @@ Response:
 ```
 
 ### DELETE /mcp/auth/clients/:client_id
+
 **Revoke OAuth2 Client**
 
 Response: 204 No Content
@@ -206,22 +215,22 @@ curl http://localhost:8082/health
   - [x] Implement JWT generation/validation
   - [x] Implement OAuth2 Client Credentials flow
   - [x] In-memory client store
-  
+
 - [x] Phase 2: MCP HTTPS Integration
   - [x] Add auth routes to Axum server
   - [x] Token endpoint (POST /mcp/auth/token)
   - [x] Client management endpoints
-  
+
 - [ ] Phase 3: Client Management (CLI)
   - [ ] `edge-hive auth client create` command
   - [ ] `edge-hive auth client list` command
   - [ ] `edge-hive auth client revoke` command
-  
+
 - [ ] Phase 4: TLS/HTTPS Setup
   - [ ] Integrate rustls for TLS 1.3
   - [ ] Generate self-signed certificates for testing
   - [ ] Production certificate support (Let's Encrypt)
-  
+
 - [ ] Phase 5: Testing & Integration
   - [ ] Unit tests for all auth modules ✅ (partial - jwt.rs has tests)
   - [ ] Integration tests with real HTTP requests

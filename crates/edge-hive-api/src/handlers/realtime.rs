@@ -1,8 +1,10 @@
 //! Real-time WebSocket handlers (placeholder)
 
 use axum::{
-    extract::State,
+    extract::ws::WebSocketUpgrade,
+    extract::Extension,
     http::StatusCode,
+    response::IntoResponse,
     response::Json,
 };
 use serde::{Deserialize, Serialize};
@@ -20,16 +22,18 @@ pub struct SubscribeResponse {
 
 /// WebSocket upgrade handler
 pub async fn ws_upgrade(
-    State(_state): State<ApiState>,
-) -> Result<StatusCode, StatusCode> {
-    // Placeholder: would upgrade to WebSocket and use SurrealDB Live Queries
-    // For now, return 501 Not Implemented
-    Err(StatusCode::NOT_IMPLEMENTED)
+    Extension(state): Extension<ApiState>,
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
+    let realtime = state.realtime.clone();
+    ws.on_upgrade(move |socket| async move {
+        realtime.handle_axum_socket(socket).await;
+    })
 }
 
 /// Subscribe to a real-time topic
 pub async fn subscribe(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
     Json(payload): Json<SubscribeRequest>,
 ) -> Result<Json<SubscribeResponse>, StatusCode> {
     // Placeholder: would create SurrealDB Live Query subscription

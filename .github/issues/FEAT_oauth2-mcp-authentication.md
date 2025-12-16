@@ -69,11 +69,13 @@ Inspirado en la implementación de Supabase MCP (`https://mcp.supabase.com/mcp/p
 ### Fase 3: Client Management CLI
 
 - [ ] Comandos para gestionar clients OAuth2:
+
   ```bash
   edge-hive auth client create --name "claude-opus" --scopes "mcp:read mcp:call"
   edge-hive auth client list
   edge-hive auth client revoke <client_id>
   ```
+
 - [ ] Generar client_id y client_secret seguros
 - [ ] Almacenar en SurrealDB con hash del secret
 

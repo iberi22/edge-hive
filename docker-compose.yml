@@ -1,5 +1,5 @@
 # Docker Compose for Edge Hive multi-node local testing
-version: '3.9'
+version: "3.9"
 
 services:
   # Node 1: Bootstrap node with full features
@@ -17,8 +17,8 @@ services:
       - EDGE_HIVE_MCP_AUTH_ENABLED=true
       - EDGE_HIVE_OAUTH2_ISSUER=https://node1:8080
     ports:
-      - "8080:8080"  # HTTP/HTTPS MCP API
-      - "4001:4001/udp"  # libp2p QUIC
+      - "8080:8080" # HTTP/HTTPS MCP API
+      - "4001:4001/udp" # libp2p QUIC
     networks:
       edgehive_net:
         ipv4_address: 172.20.0.10

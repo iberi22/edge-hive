@@ -1,7 +1,7 @@
 //! Edge functions handlers (WASM runtime placeholder)
 
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path},
     http::StatusCode,
     response::Json,
 };
@@ -23,7 +23,7 @@ pub struct ExecutionResult {
 
 /// Execute a WASM edge function
 pub async fn execute_function(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
     Path(function): Path<String>,
     Json(payload): Json<Value>,
 ) -> Result<Json<ExecutionResult>, StatusCode> {
@@ -40,7 +40,7 @@ pub async fn execute_function(
 
 /// List available edge functions
 pub async fn list_functions(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
 ) -> Json<Vec<FunctionInfo>> {
     // Placeholder: would list from edge-hive-wasm registry
     Json(vec![

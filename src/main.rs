@@ -52,6 +52,14 @@ enum Commands {
         #[arg(short, long, default_value = "8080")]
         port: u16,
 
+        /// Enable HTTPS/TLS (uses self-signed certificates for testing)
+        #[arg(long)]
+        https: bool,
+
+        /// Hostname for TLS certificate SANs
+        #[arg(long, default_value = "localhost")]
+        hostname: String,
+
         /// Enable Tor onion service
         #[arg(long)]
         tor: bool,
@@ -74,6 +82,12 @@ enum Commands {
         #[arg(short, long, default_value = "http://127.0.0.1:8080")]
         api_server: String,
     },
+
+    /// Run as MCP Server (Model Context Protocol) over stdio
+    Mcp(edge_hive_core::commands::mcp::McpArgs),
+
+    /// Manage OAuth2 authentication (client credentials)
+    Auth(edge_hive_core::commands::auth::AuthArgs),
 }
 
 #[derive(Subcommand)]
@@ -96,22 +110,33 @@ enum IdentityCommands {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Initialize logging
-    let level = if cli.verbose {
-        tracing::Level::DEBUG
-    } else {
-        tracing::Level::INFO
-    };
+    // Initialize logging (skip for MCP to avoid polluting stdout)
+    if !matches!(cli.command, Commands::Mcp(_)) {
+        let level = if cli.verbose {
+            tracing::Level::DEBUG
+        } else {
+            tracing::Level::INFO
+        };
 
-    tracing_subscriber::fmt()
-        .with_max_level(level)
-        .init();
+        tracing_subscriber::fmt()
+            .with_max_level(level)
+            .init();
+    }
 
     match cli.command {
         Commands::Identity { action } => handle_identity(action, &cli.config_dir)?,
-        Commands::Start { port, tor, discovery, bootstrap_peer } => handle_start(port, tor, discovery, bootstrap_peer, &cli.config_dir).await?,
+        Commands::Start { port, https, hostname, tor, discovery, bootstrap_peer } => {
+            handle_start(port, https, hostname, tor, discovery, bootstrap_peer, &cli.config_dir).await?
+        },
         Commands::Status => handle_status(&cli.config_dir)?,
         Commands::Peers { api_server } => handle_peers(api_server).await?,
+        Commands::Mcp(args) => {
+            edge_hive_core::commands::mcp::run(args).await?;
+        }
+        Commands::Auth(args) => {
+            let data_dir = expand_path(&cli.config_dir);
+            edge_hive_core::commands::auth::run(args, &data_dir).await?;
+        }
     }
 
     Ok(())
@@ -174,7 +199,15 @@ fn handle_identity(action: IdentityCommands, config_dir: &PathBuf) -> Result<()>
     Ok(())
 }
 
-async fn handle_start(port: u16, _tor: bool, discovery: bool, bootstrap_peer: Option<String>, config_dir: &PathBuf) -> Result<()> {
+async fn handle_start(
+    port: u16,
+    enable_https: bool,
+    hostname: String,
+    _tor: bool,
+    discovery: bool,
+    bootstrap_peer: Option<String>,
+    config_dir: &PathBuf,
+) -> Result<()> {
     let identity_path = expand_path(config_dir).join("identity.key");
 
     if !identity_path.exists() {
@@ -248,7 +281,7 @@ async fn handle_start(port: u16, _tor: bool, discovery: bool, bootstrap_peer: Op
         secret
     };
 
-    server::run(port, discovery_svc, message_store, data_dir, Some(jwt_secret)).await?;
+    server::run(port, discovery_svc, message_store, data_dir, Some(jwt_secret), enable_https, hostname).await?;
 
     Ok(())
 }

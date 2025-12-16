@@ -33,6 +33,15 @@ Before Android APK build, we need E2E validation.
 
 ## 🛠️ Test Scenarios
 
+### Scenario 5: VPS-style API Gateway + DB + Realtime + Edge Functions (Rust)
+
+Goal: validate the "personal VPS" experience end-to-end using the Rust server:
+
+- [ ] Boot core server and confirm both `/health` and `/api/v1/health`
+- [ ] CRUD roundtrip via `/api/v1/data/:table` (uses SurrealDB)
+- [ ] Realtime WS: subscribe to a topic and receive Live Query events when data changes
+- [ ] Edge Functions API: list + execute via `/api/v1/edge` and `/api/v1/edge/:function`
+
 ### Scenario 1: Single Node Bootstrap
 
 ```bash

@@ -51,7 +51,7 @@ impl L1Cache {
         if pattern.ends_with('*') {
             // Prefix match: "user:*"
             let _prefix = &pattern[..pattern.len() - 1];
-            
+
             // Note: moka doesn't expose keys directly, so we can't iterate
             // This is a limitation. For production, consider using a separate index.
             debug!("Pattern deletion not fully implemented for L1 cache: {}", pattern);
@@ -114,7 +114,7 @@ mod tests {
         // Note: moka's entry_count() may not be instantly accurate
         // Just verify it returns without panicking
         let _count = cache.entry_count().await;
-        
+
         // Verify values are actually stored
         assert_eq!(cache.get("key1").await, Some(b"value1".to_vec()));
         assert_eq!(cache.get("key2").await, Some(b"value2".to_vec()));
@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(cache.get("key1").await, Some(b"value1".to_vec()));
 
         cache.clear().await;
-        
+
         // Verify data is cleared
         assert_eq!(cache.get("key1").await, None);
         assert_eq!(cache.get("key2").await, None);

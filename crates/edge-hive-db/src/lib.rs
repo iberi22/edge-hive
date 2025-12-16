@@ -31,7 +31,7 @@ pub struct StoredPeer {
     pub peer_id: String,
     pub name: Option<String>,
     pub addresses: Vec<String>,
-    pub last_seen: chrono::DateTime<chrono::Utc>,
+    pub last_seen: surrealdb::Datetime,
     pub capabilities: u32,
 }
 
@@ -45,6 +45,16 @@ pub struct StoredConfig {
 /// Database service for Edge Hive
 pub struct DatabaseService {
     db: Surreal<surrealdb::engine::local::Db>,
+}
+
+/// Generic record shape for Live Queries.
+///
+/// SurrealDB live notifications include an `id` of type `Thing` plus arbitrary fields.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveRecord {
+    pub id: surrealdb::sql::Thing,
+    #[serde(flatten)]
+    pub fields: serde_json::Map<String, serde_json::Value>,
 }
 
 impl DatabaseService {
@@ -157,12 +167,54 @@ impl DatabaseService {
     pub async fn query(&self, sql: &str) -> Result<surrealdb::Response, DbError> {
         Ok(self.db.query(sql).await?)
     }
+
+    /// Execute a raw SurrealQL query and return the first statement's results as JSON.
+    ///
+    /// This is useful for HTTP handlers that want to return `serde_json::Value` while
+    /// SurrealDB may contain non-JSON-native types.
+    pub async fn query_json(&self, sql: &str) -> Result<Vec<serde_json::Value>, DbError> {
+        #[derive(Debug, Deserialize)]
+        struct AnyRecord {
+            id: surrealdb::sql::Thing,
+            #[serde(flatten)]
+            fields: serde_json::Map<String, serde_json::Value>,
+        }
+
+        let mut resp = self.db.query(sql).await?;
+        let records: Vec<AnyRecord> = resp
+            .take(0)
+            .map_err(|e| DbError::Query(e.to_string()))?;
+
+        let mut out = Vec::with_capacity(records.len());
+        for record in records {
+            let mut obj = record.fields;
+            obj.insert(
+                "id".to_string(),
+                serde_json::Value::String(record.id.to_string()),
+            );
+            out.push(serde_json::Value::Object(obj));
+        }
+
+        Ok(out)
+    }
+
+    /// Create a Live Query stream for all changes on a table.
+    ///
+    /// This uses SurrealDB's Rust client live query support (embedded/local engine).
+    pub async fn live_table(
+        &self,
+        table: &str,
+    ) -> Result<surrealdb::method::Stream<Vec<LiveRecord>>, DbError> {
+        Ok(self.db.select::<Vec<LiveRecord>>(table).live().await?)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
     use tempfile::tempdir;
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_database_operations() {
@@ -181,7 +233,7 @@ mod tests {
             peer_id: "test-peer-id".into(),
             name: Some("test-node".into()),
             addresses: vec!["/ip4/127.0.0.1/tcp/8080".into()],
-            last_seen: chrono::Utc::now(),
+            last_seen: chrono::Utc::now().into(),
             capabilities: 1,
         };
 
@@ -189,5 +241,40 @@ mod tests {
         let loaded = db.get_peer("test-peer-id").await.unwrap();
         assert!(loaded.is_some());
         assert_eq!(loaded.unwrap().name, Some("test-node".into()));
+    }
+
+    #[tokio::test]
+    async fn test_query_json_create_schemaless_table() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = DatabaseService::new(&db_path).await.unwrap();
+
+        let created = db
+            .query_json(r#"CREATE items CONTENT {"name":"alpha"};"#)
+            .await
+            .unwrap();
+
+        assert!(!created.is_empty(), "expected CREATE to return at least one record");
+    }
+
+    #[tokio::test]
+    async fn test_live_table_emits_create_notification() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = DatabaseService::new(&db_path).await.unwrap();
+
+        let mut stream = db.live_table("items").await.unwrap();
+
+        let _ = db
+            .query(r#"CREATE items CONTENT {"name":"live"};"#)
+            .await
+            .unwrap();
+
+        let next = tokio::time::timeout(Duration::from_secs(3), async { stream.next().await })
+            .await
+            .expect("timeout waiting for live notification");
+
+        let next = next.expect("stream ended").expect("notification ok");
+        assert!(matches!(next.action, surrealdb::Action::Create));
     }
 }

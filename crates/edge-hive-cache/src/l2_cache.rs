@@ -32,12 +32,12 @@ impl L2Cache {
     /// Set a value with TTL (time-to-live)
     pub async fn set_with_ttl(&mut self, key: &str, value: Vec<u8>, _ttl_secs: u64) -> Result<()> {
         self.client.set(key, value.into()).await.map_err(|e| anyhow::anyhow!("{}", e))?;
-        
+
         // Note: mini-redis doesn't support SETEX/EXPIRE in the current client API
         // For production, we'd need to extend mini-redis or use redis-rs
         // For now, we just set the value without TTL
         debug!("TTL not fully supported in mini-redis client, set without expiration: {}", key);
-        
+
         Ok(())
     }
 
@@ -68,13 +68,13 @@ impl L2Cache {
 // Migration example:
 // ```rust
 // use redis::AsyncCommands;
-// 
+//
 // pub async fn connect(addr: &str) -> Result<Self> {
 //     let client = redis::Client::open(addr)?;
 //     let conn = client.get_multiplexed_async_connection().await?;
 //     Ok(Self { conn })
 // }
-// 
+//
 // pub async fn set_with_ttl(&mut self, key: &str, value: Vec<u8>, ttl_secs: u64) -> Result<()> {
 //     self.conn.set_ex(key, value, ttl_secs).await?;
 //     Ok(())

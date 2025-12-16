@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
    plugins: [
-      svelte({ 
+      svelte({
          hot: !process.env.VITEST,
          compilerOptions: {
             dev: true,

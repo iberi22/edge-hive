@@ -43,41 +43,41 @@ impl ClientCredentials {
             revoked: false,
         }
     }
-    
+
     /// Hash client secret using SHA-256
     pub fn hash_secret(secret: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(secret.as_bytes());
         hex::encode(hasher.finalize())
     }
-    
+
     /// Verify client secret against stored hash
     pub fn verify_secret(&self, secret: &str) -> bool {
         if self.revoked {
             return false;
         }
-        
+
         let provided_hash = Self::hash_secret(secret);
-        
+
         // Constant-time comparison to prevent timing attacks
         use std::cmp::Ordering;
         let mut result = Ordering::Equal;
-        
+
         for (a, b) in self.client_secret_hash.bytes().zip(provided_hash.bytes()) {
             if a != b {
                 result = Ordering::Less;
             }
         }
-        
-        result == Ordering::Equal && 
+
+        result == Ordering::Equal &&
         self.client_secret_hash.len() == provided_hash.len()
     }
-    
+
     /// Generate random client_id
     pub fn generate_client_id() -> String {
         format!("cli_{}", uuid::Uuid::new_v4().simple())
     }
-    
+
     /// Generate random client_secret (32 bytes, hex encoded)
     pub fn generate_client_secret() -> String {
         use rand::Rng;
@@ -138,7 +138,7 @@ impl TokenRequest {
         }
         Ok(())
     }
-    
+
     /// Parse requested scopes
     pub fn requested_scopes(&self) -> Vec<String> {
         self.scope
@@ -151,38 +151,38 @@ impl TokenRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_client_credentials_creation() {
         let client_id = ClientCredentials::generate_client_id();
         let client_secret = ClientCredentials::generate_client_secret();
-        
+
         let creds = ClientCredentials::new(
             client_id.clone(),
             &client_secret,
             vec!["mcp:read".to_string()],
             "Test Client".to_string(),
         );
-        
+
         assert_eq!(creds.client_id, client_id);
         assert!(creds.verify_secret(&client_secret));
         assert!(!creds.verify_secret("wrong_secret"));
     }
-    
+
     #[test]
     fn test_secret_hashing() {
         let secret = "my_secret_key_123";
         let hash1 = ClientCredentials::hash_secret(secret);
         let hash2 = ClientCredentials::hash_secret(secret);
-        
+
         // Same secret should produce same hash
         assert_eq!(hash1, hash2);
-        
+
         // Different secret should produce different hash
         let hash3 = ClientCredentials::hash_secret("different_secret");
         assert_ne!(hash1, hash3);
     }
-    
+
     #[test]
     fn test_token_request_validation() {
         let valid_request = TokenRequest {
@@ -191,9 +191,9 @@ mod tests {
             client_secret: "test_secret".to_string(),
             scope: Some("mcp:read mcp:call".to_string()),
         };
-        
+
         assert!(valid_request.validate().is_ok());
-        
+
         let scopes = valid_request.requested_scopes();
         assert_eq!(scopes, vec!["mcp:read", "mcp:call"]);
     }

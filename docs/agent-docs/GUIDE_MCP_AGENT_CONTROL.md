@@ -30,8 +30,8 @@ complexity: moderate
 
 The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to control the admin dashboard programmatically using the **Model Context Protocol (MCP)**.
 
-**Protocol:** JSON-RPC 2.0  
-**Transport:** Tauri IPC (WebSocket/HTTP planned)  
+**Protocol:** JSON-RPC 2.0
+**Transport:** Tauri IPC (WebSocket/HTTP planned)
 **Location:** `crates/edge-hive-mcp/`
 
 ---
@@ -43,6 +43,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 **Description:** Get current system metrics.
 
 **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -52,6 +53,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -65,6 +67,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -86,6 +89,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 **Description:** List all nodes with optional status filter.
 
 **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -100,6 +104,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -115,6 +120,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -139,6 +145,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 **Description:** Restart a specific node.
 
 **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -153,6 +160,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -168,6 +176,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -187,6 +196,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 **Description:** Update node status (e.g., maintenance mode).
 
 **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -204,6 +214,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -220,6 +231,7 @@ The **Edge Hive MCP Server** enables AI agents (Claude, GPT, Gemini, etc.) to co
 ```
 
 **Example Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -289,6 +301,7 @@ cargo test
 ```
 
 Expected output:
+
 ```
 running 4 tests
 test tests::test_list_tools ... ok

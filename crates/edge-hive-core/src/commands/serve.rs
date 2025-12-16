@@ -1,6 +1,6 @@
 //! Start the Edge Hive server
 
-use edge_hive_core::server;
+use crate::server;
 use edge_hive_identity::NodeIdentity;
 use edge_hive_tunnel::{TunnelBackend, TunnelService};
 use edge_hive_discovery::DiscoveryService;
@@ -31,6 +31,14 @@ pub struct ServeArgs {
     /// Enable discovery service
     #[arg(long)]
     pub discovery: bool,
+
+    /// Enable HTTPS/TLS (self-signed certificate)
+    #[arg(long)]
+    pub https: bool,
+
+    /// Hostname for TLS certificate
+    #[arg(long, default_value = "localhost")]
+    pub hostname: String,
 }
 
 /// The network behaviour for the discovery service.
@@ -203,13 +211,15 @@ pub async fn run(
         secret
     };
 
-    // Run the HTTP server
+    // Run the HTTP/HTTPS server
     server::run(
         args.port,
         discovery_svc,
         message_store,
         data_dir.to_path_buf(),
         Some(jwt_secret),
+        args.https,
+        args.hostname,
     ).await?;
 
     // Cleanup

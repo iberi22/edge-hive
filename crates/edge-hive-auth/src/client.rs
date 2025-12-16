@@ -34,15 +34,15 @@ impl ClientStore {
     /// Verify client credentials
     pub async fn verify_credentials(&self, client_id: &str, client_secret: &str) -> Result<ClientCredentials> {
         let client = self.get_client(client_id).await?;
-        
+
         if !client.verify_secret(client_secret) {
             return Err(AuthError::InvalidCredentials);
         }
-        
+
         if client.revoked {
             return Err(AuthError::InvalidCredentials);
         }
-        
+
         Ok(client)
     }
 
@@ -55,7 +55,7 @@ impl ClientStore {
     /// Revoke a client
     pub async fn revoke_client(&self, client_id: &str) -> Result<()> {
         let mut clients = self.clients.write().await;
-        
+
         if let Some(client) = clients.get_mut(client_id) {
             client.revoked = true;
             Ok(())
@@ -87,27 +87,27 @@ mod tests {
     #[tokio::test]
     async fn test_client_store_operations() {
         let store = ClientStore::new();
-        
+
         let client = ClientCredentials::new(
             "test_client".to_string(),
             "test_secret",
             vec!["mcp:read".to_string()],
             "Test Client".to_string(),
         );
-        
+
         // Add client
         store.add_client(client.clone()).await.unwrap();
-        
+
         // Verify credentials
         let verified = store.verify_credentials("test_client", "test_secret").await.unwrap();
         assert_eq!(verified.client_id, "test_client");
-        
+
         // Invalid secret should fail
         assert!(store.verify_credentials("test_client", "wrong_secret").await.is_err());
-        
+
         // Revoke client
         store.revoke_client("test_client").await.unwrap();
-        
+
         // Revoked client should fail verification
         assert!(store.verify_credentials("test_client", "test_secret").await.is_err());
     }

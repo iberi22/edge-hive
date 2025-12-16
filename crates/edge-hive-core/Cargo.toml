@@ -6,7 +6,7 @@ license.workspace = true
 description = "Core binary for Edge Hive distributed edge computing platform"
 
 [[bin]]
-name = "edge-hive"
+name = "edge-hive-core"
 path = "src/main.rs"
 
 [dependencies]
@@ -18,6 +18,12 @@ futures.workspace = true
 axum.workspace = true
 tower.workspace = true
 tower-http.workspace = true
+
+# TLS/HTTPS
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+rustls = { version = "0.23", features = ["ring"] }
+rustls-pemfile = "2.2"
+rcgen = "0.13"                                               # For self-signed certificate generation
 
 # Serialization
 serde.workspace = true
@@ -40,12 +46,17 @@ config.workspace = true
 # Platform directories
 directories = "5.0"
 chrono = { version = "0.4", features = ["serde"] }
+jsonwebtoken = "9.3"                               # For JWT verification
+uuid = { version = "1.11", features = ["v4"] }
 
 # Internal crates
 edge-hive-identity.workspace = true
 edge-hive-discovery.workspace = true
 edge-hive-tunnel.workspace = true
 edge-hive-db.workspace = true
+edge-hive-cache = { path = "../edge-hive-cache" }
+edge-hive-realtime = { path = "../edge-hive-realtime" }
+edge-hive-api = { path = "../edge-hive-api" }
 edge-hive-auth = { path = "../edge-hive-auth", features = ["server"] }
 
 # P2P Networking
@@ -57,3 +68,5 @@ assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.10"
 hyper = "1.8.1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+tokio-tungstenite = "0.24"

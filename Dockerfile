@@ -1,5 +1,5 @@
 # Multi-stage build for minimal Docker image
-FROM rust:1.85-alpine AS builder
+FROM rust:1.90-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -12,10 +12,12 @@ WORKDIR /build
 
 # Copy workspace files
 COPY Cargo.toml Cargo.lock ./
+COPY src ./src
 COPY crates ./crates
+COPY app/src-tauri ./app/src-tauri
 
 # Build release binary (static linking for musl)
-RUN cargo build --release --package edge-hive-core --target x86_64-unknown-linux-musl
+RUN cargo build --release --package edge-hive --bin edge-hive --target x86_64-unknown-linux-musl
 
 # Final stage: minimal Alpine image
 FROM alpine:3.19
@@ -23,7 +25,8 @@ FROM alpine:3.19
 # Install runtime dependencies (only CA certs for HTTPS)
 RUN apk add --no-cache \
     ca-certificates \
-    libgcc
+    libgcc \
+    wget
 
 # Create non-root user
 RUN addgroup -g 1000 edgehive && \
@@ -52,22 +55,13 @@ EXPOSE 8080/tcp
 EXPOSE 4001/udp
 EXPOSE 5353/udp
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD ["/usr/local/bin/edge-hive", "status", "--json"] || exit 1
-
 # Environment variables
-ENV RUST_LOG=info,edge_hive=debug \
-    EDGE_HIVE_DATA_DIR=/data/.edge-hive
-
-# Default command: start server with discovery
-ENTRYPOINT ["/usr/local/bin/edge-hive"]
-CMD ["serve", "--port", "8080", "--discovery"]
-EXPOSE 8080 4001/udp
+ENV RUST_LOG=info,edge_hive=debug
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-# Start Edge Hive
-CMD ["edge-hive", "start", "--data-dir", "/data/.edge-hive"]
+# Default command: start server with discovery
+ENTRYPOINT ["/usr/local/bin/edge-hive"]
+CMD ["--config-dir", "/data/.edge-hive", "start", "--port", "8080", "--discovery"]

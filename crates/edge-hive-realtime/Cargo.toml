@@ -12,6 +12,12 @@ tracing = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 
+# WebSocket types (for Axum integration)
+axum = { workspace = true, features = ["ws"] }
+
+# SurrealDB types for live notifications (Action/Notification/Value)
+surrealdb = { workspace = true }
+
 # Async + WebSocket
 futures-util = "0.3"
 tokio = { workspace = true, features = ["full"] }

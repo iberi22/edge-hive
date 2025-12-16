@@ -97,9 +97,10 @@ El discovery actual con libp2p (mDNS + Kademlia) solo descubre peer IDs y direcc
 ### Fase 2: mDNS Enhancement
 
 - [ ] Usar TXT records de mDNS para metadata básica
+
   ```rust
   use mdns_sd::{ServiceDaemon, ServiceInfo};
-  
+
   let properties = vec![
       ("node_id", "swift-fox-0dd9b9"),
       ("version", "0.1.0"),
@@ -108,6 +109,7 @@ El discovery actual con libp2p (mDNS + Kademlia) solo descubre peer IDs y direcc
       ("oauth2_enabled", "true"),
   ];
   ```
+
 - [ ] Escuchar anuncios mDNS de otros nodos
 - [ ] Parsear TXT records y actualizar peer info
 
@@ -122,16 +124,21 @@ El discovery actual con libp2p (mDNS + Kademlia) solo descubre peer IDs y direcc
 ### Fase 4: HTTP Discovery Endpoint
 
 - [ ] Endpoint público para obtener advertisement:
+
   ```
   GET /discovery/announce
   Response: NodeAdvertisement (JSON)
   ```
+
 - [ ] Endpoint para listar peers descubiertos:
+
   ```
   GET /discovery/peers
   Response: { "peers": [NodeAdvertisement] }
   ```
+
 - [ ] Endpoint para solicitar conexión P2P:
+
   ```
   POST /discovery/connect/{peer_id}
   Body: { "protocol": "libp2p" }
@@ -186,12 +193,12 @@ services:
     build: .
     ports: ["8080:8080"]
     networks: ["edge-hive"]
-  
+
   node-2:
     build: .
     ports: ["8081:8080"]
     networks: ["edge-hive"]
-  
+
   node-3:
     build: .
     ports: ["8082:8080"]

@@ -8,16 +8,16 @@ pub struct CacheMetrics {
     /// Total cache hits (L1 or L2)
     hits_l1: AtomicU64,
     hits_l2: AtomicU64,
-    
+
     /// Total cache misses
     misses: AtomicU64,
-    
+
     /// Total writes
     writes: AtomicU64,
-    
+
     /// Total evictions
     evictions: AtomicU64,
-    
+
     /// Whether metrics are enabled
     enabled: bool,
 }

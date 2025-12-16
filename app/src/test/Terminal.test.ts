@@ -29,7 +29,7 @@ describe('Terminal', () => {
    it('mock test - terminal output listener can be registered', async () => {
       const mockCallback = vi.fn();
       const unlisten = await listen('terminal-output', mockCallback);
-      
+
       expect(unlisten).toBeDefined();
       expect(typeof unlisten).toBe('function');
    });

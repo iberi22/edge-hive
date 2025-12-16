@@ -101,13 +101,13 @@ async fn authenticate_agent(req: Request) -> Result<AgentSession> {
     // 1. Extraer Bearer token
     let token = req.headers().get("Authorization")?
         .strip_prefix("Bearer ")?;
-    
+
     // 2. Validar JWT
     let claims = verify_jwt(token, &public_key)?;
-    
+
     // 3. Verificar scopes
     ensure!(claims.scopes.contains("mcp:read"));
-    
+
     // 4. Crear sesión
     Ok(AgentSession {
         agent_id: claims.sub,
@@ -142,13 +142,13 @@ async fn authenticate_agent(req: Request) -> Result<AgentSession> {
 async fn authenticate_peer(peer_id: PeerId) -> Result<PeerSession> {
     // 1. Verificar firma Ed25519
     let public_key = peer_id.to_public_key()?;
-    
+
     // 2. Challenge-response
     let challenge = generate_challenge();
     let signature = peer.sign(challenge).await?;
-    
+
     public_key.verify(challenge, signature)?;
-    
+
     // 3. Crear sesión P2P
     Ok(PeerSession {
         peer_id,
@@ -334,7 +334,7 @@ async fn token_endpoint(
 ) -> Result<Json<TokenResponse>, AuthError> {
     // Validar client credentials
     let client = state.validate_client(&req.client_id, &req.client_secret).await?;
-    
+
     // Generar JWT
     let claims = Claims {
         sub: req.client_id,
@@ -344,9 +344,9 @@ async fn token_endpoint(
         iat: Utc::now().timestamp(),
         scopes: parse_scopes(&req.scope.unwrap_or_default()),
     };
-    
+
     let token = encode_jwt(&claims, &state.jwt_secret)?;
-    
+
     Ok(Json(TokenResponse {
         access_token: token,
         token_type: "Bearer".into(),
@@ -405,17 +405,17 @@ use mdns_sd::{ServiceDaemon, ServiceInfo};
 
 async fn advertise_on_mdns(node_info: &NodeInfo) -> Result<()> {
     let mdns = ServiceDaemon::new()?;
-    
+
     let service_type = "_edge-hive._tcp.local.";
     let instance_name = format!("{}.{}", node_info.node_id, service_type);
-    
+
     let properties = vec![
         ("node_id", node_info.node_id.as_str()),
         ("version", "0.1.0"),
         ("mcp_enabled", "true"),
         ("oauth2_enabled", "true"),
     ];
-    
+
     let service = ServiceInfo::new(
         service_type,
         &instance_name,
@@ -423,9 +423,9 @@ async fn advertise_on_mdns(node_info: &NodeInfo) -> Result<()> {
         node_info.mcp_port,
         properties,
     )?;
-    
+
     mdns.register(service)?;
-    
+
     Ok(())
 }
 ```
@@ -442,15 +442,15 @@ use rustls::{ServerConfig, Certificate, PrivateKey};
 fn create_tls_config() -> Result<ServerConfig> {
     let cert = load_certificate("certs/node.crt")?;
     let key = load_private_key("certs/node.key")?;
-    
+
     let mut config = ServerConfig::builder()
         .with_safe_defaults()
         .with_no_client_auth()
         .with_single_cert(vec![cert], key)?;
-    
+
     // Modern ciphers only
     config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
-    
+
     Ok(config)
 }
 ```
@@ -587,4 +587,3 @@ docker exec edge-hive-node-2 edge-hive peers connect <peer_id>
 - [libp2p Specs](https://github.com/libp2p/specs)
 - [Supabase MCP Example](https://supabase.com/docs/guides/functions/examples/mcp-server-mcp-lite)
 - [JWT Best Practices](https://datatracker.ietf.org/doc/html/rfc8725)
-

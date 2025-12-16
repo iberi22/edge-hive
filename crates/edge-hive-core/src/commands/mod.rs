@@ -6,3 +6,5 @@ pub mod status;
 pub mod peers;
 pub mod tunnel;
 pub mod plugin;
+pub mod mcp;
+pub mod auth;

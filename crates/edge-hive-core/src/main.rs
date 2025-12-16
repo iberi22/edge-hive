@@ -4,6 +4,9 @@ use tracing_subscriber::FmtSubscriber;
 use directories::ProjectDirs;
 
 mod config;
+mod auth;
+mod server;
+mod tls;
 pub mod commands {
     pub mod init;
     pub mod serve;
@@ -12,6 +15,7 @@ pub mod commands {
     pub mod tunnel;
     pub mod plugin;
     pub mod mcp; // Added MCP module
+    pub mod auth; // OAuth2 client management
 }
 
 #[derive(Parser, Debug)]
@@ -51,6 +55,9 @@ enum Commands {
 
     /// Run as MCP Server (Model Context Protocol)
     Mcp(commands::mcp::McpArgs),
+
+    /// Manage OAuth2 authentication
+    Auth(commands::auth::AuthArgs),
 }
 
 #[tokio::main]
@@ -89,6 +96,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Tunnel(a) => commands::tunnel::run(a, &data_dir).await?,
         Commands::Plugin(a) => commands::plugin::run(a, &data_dir).await?,
         Commands::Mcp(a) => commands::mcp::run(a).await?, // Run MCP
+        Commands::Auth(a) => commands::auth::run(a, &data_dir).await?, // OAuth2 management
     }
 
     Ok(())

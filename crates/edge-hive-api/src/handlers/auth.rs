@@ -1,7 +1,7 @@
 //! Authentication handlers
 
 use axum::{
-    extract::State,
+    extract::Extension,
     http::StatusCode,
     response::Json,
 };
@@ -28,7 +28,7 @@ pub struct RefreshRequest {
 
 /// OAuth2 login handler
 pub async fn login(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     // Placeholder: would integrate with edge-hive-auth
@@ -41,7 +41,7 @@ pub async fn login(
 
 /// Refresh token handler
 pub async fn refresh_token(
-    State(_state): State<ApiState>,
+    Extension(_state): Extension<ApiState>,
     Json(payload): Json<RefreshRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     // Placeholder: would validate and refresh token
@@ -53,7 +53,7 @@ pub async fn refresh_token(
 }
 
 /// Logout handler
-pub async fn logout(State(_state): State<ApiState>) -> StatusCode {
+pub async fn logout(Extension(_state): Extension<ApiState>) -> StatusCode {
     // Placeholder: would invalidate session
     StatusCode::OK
 }

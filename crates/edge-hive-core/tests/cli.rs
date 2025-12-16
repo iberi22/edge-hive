@@ -51,10 +51,11 @@ fn test_peers_command() -> TestResult {
 
     let mut cmd = Command::cargo_bin("edge-hive")?;
     cmd.arg("peers")
+        .arg("list")
         .env("EDGE_HIVE_DATA_DIR", data_dir)
         .assert()
         .success()
-        .stdout(predicate::str::contains("No peers discovered yet."));
+        .stdout(predicate::str::contains("Discovery finished"));
 
     Ok(())
 }

@@ -13,6 +13,7 @@ members = [
     "crates/edge-hive-auth",
     "crates/edge-hive-cache",
     "crates/edge-hive-api",
+    "crates/edge-hive-realtime",
     "app/src-tauri",
 ]
 

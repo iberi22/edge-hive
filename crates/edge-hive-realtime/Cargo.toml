@@ -1,0 +1,27 @@
+[package]
+name = "edge-hive-realtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Real-time WebSocket server for Edge Hive (SurrealDB Live Queries)"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Async + WebSocket
+futures-util = "0.3"
+tokio = { workspace = true, features = ["full"] }
+tokio-tungstenite = "0.24"
+
+# Concurrency
+dashmap = "6"
+
+# Internal
+edge-hive-db = { path = "../edge-hive-db" }
+
+[dev-dependencies]
+tokio-test = "0.4"

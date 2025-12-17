@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           generate_release_notes: true
@@ -55,7 +55,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }} -p edge-hive-core
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             target/${{ matrix.target }}/release/edge-hive${{ matrix.os == 'windows-latest' && '.exe' || '' }}
@@ -89,6 +89,6 @@ jobs:
             build --release -p edge-hive-core
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: target/${{ matrix.target }}/release/edge-hive

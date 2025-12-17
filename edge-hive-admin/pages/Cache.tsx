@@ -1,7 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
+import { LoadingState } from '../components/LoadingState';
 import { Zap, Activity, ShieldAlert, Cpu, HardDrive, Database, Radio, GitBranch, Terminal, ShieldCheck, Info, Binary, Sparkles, Orbit, Search } from 'lucide-react';
-import { mockApi } from '../api';
+import { tauriApi } from '../api/tauriClient';
 import { CacheMetrics, LiveQuery } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -93,8 +94,8 @@ const Cache: React.FC = () => {
     const fetchData = async () => {
         try {
             const [m, lq] = await Promise.all([
-                mockApi.getCacheMetrics(),
-                mockApi.getLiveQueries()
+                tauriApi.getCacheMetrics(),
+                tauriApi.getLiveQueries()
             ]);
             setMetrics(m);
             setLiveQueries(lq);
@@ -106,13 +107,14 @@ const Cache: React.FC = () => {
     useEffect(() => {
         fetchData();
         const interval = setInterval(() => {
-            mockApi.getCacheMetrics().then(setMetrics);
+            tauriApi.getCacheMetrics().then(setMetrics);
             setEntropy(Math.random() * 0.005);
         }, 3000);
         return () => clearInterval(interval);
     }, []);
 
-    if (!metrics) return <div className="p-8 text-center text-slate-500 font-mono animate-pulse">Syncing with Surreal Engine...</div>;
+
+    if (!metrics) return <LoadingState message="Syncing with Surreal Engine..." />;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

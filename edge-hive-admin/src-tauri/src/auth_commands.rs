@@ -1,4 +1,4 @@
-use tauri::{AppHandle, State, Runtime};
+use tauri::State;
 use edge_hive_auth::{TokenGenerator, JwtKeys};
 use serde::{Deserialize, Serialize};
 
@@ -22,9 +22,14 @@ pub struct AuthState {
 impl AuthState {
     pub fn new() -> Self {
         // In a real app we would load keys from disk or env
-        let keys = JwtKeys::generate();
+        // Using arbitrary secret for now
+        let secret = vec![0u8; 32]; // Or use a proper random generation if uuid/rand available
+        // Or if JwtKeys::generate_secret() exists:
+        // let secret = JwtKeys::generate_secret();
+        // But simpler to just use a fixed buffer since this is a stub/demo
+        let secret = "stub_secret_key_change_me".as_bytes();
         Self {
-            token_gen: TokenGenerator::new(keys),
+            token_gen: TokenGenerator::new(secret, "edge-hive-admin".to_string()),
         }
     }
 }

@@ -25,6 +25,9 @@ edge-hive-auth = { path = "../../crates/edge-hive-auth" }
 edge-hive-billing = { path = "../../crates/edge-hive-billing" }
 edge-hive-cache = { path = "../../crates/edge-hive-cache" }
 edge-hive-tunnel = { path = "../../crates/edge-hive-tunnel" }
+uuid = "1.19.0"
+chrono = "0.4.42"
+rand.workspace = true
 # edge-hive-identity = { path = "../../crates/edge-hive-identity" }
 # edge-hive-discovery = { path = "../../crates/edge-hive-discovery" }
 

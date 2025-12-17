@@ -1,20 +1,54 @@
+# Edge Hive Admin
+
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="1200" height="475" alt="Edge Hive Dashboard" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+**Edge Hive Admin** is the centralized control plane for the Edge Hive node ecosystem. It provides a cyberpunk-themed, real-time dashboard for managing Compute, Networking, and Storage resources across the distributed grid.
 
-This contains everything you need to run your app locally.
+## Architecture
 
-View your app in AI Studio: https://ai.studio/apps/drive/1CWqM-9J2sTBTyf8uO6zEIKOZZI_wdEfh
+This is a hybrid **Tauri** application:
+- **Frontend**: React (Vite) + TypeScript + TailwindCSS.
+- **Backend**: Rust (Tauri Core) integrating `edge-hive-*` crates.
+- **Communication**: Tauri Commands (RPC) & Events (Real-time).
 
-## Run Locally
+### Key Modules
+| Module | Crate | Description |
+|--------|-------|-------------|
+| **Auth** | `edge-hive-auth` | RBAC, Identity, JWT, P2P Ops |
+| **Billing** | `edge-hive-billing` | Usage metering, Invoicing, Plans |
+| **Cache** | `edge-hive-cache` | L1 (Moka) / L2 (Redis) caching layer |
+| **Tunnel** | `edge-hive-tunnel` | Onion routing, Hidden Services, Federation |
+| **Chaos** | `local` | Disaster simulation and resilience testing |
 
-**Prerequisites:**  Node.js
+## Development
 
+### Prerequisites
+- **Node.js** (v18+)
+- **Rust** (Stable)
+- **Visual Studio Build Tools** (Windows) or `build-essential` (Linux)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Quick Start
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+2. **Run Development Server** (Frontend + Tauri)
+   ```bash
+   npm run tauri dev
+   ```
+3. **Backend-Only Check**
+   ```bash
+   cd src-tauri
+   cargo check
+   ```
+
+## Testing
+Run End-to-End tests with Playwright:
+```bash
+npx playwright test
+```
+
+## License
+MIT

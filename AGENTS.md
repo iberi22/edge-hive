@@ -1316,6 +1316,7 @@ tmp/                # Legacy - use .tmp/
 ### Cleanup & Maintenance
 
 **Automatic Cleanup Script:**
+
 ```bash
 # Windows
 ./scripts/cleanup-workspace.ps1
@@ -1328,6 +1329,7 @@ tmp/                # Legacy - use .tmp/
 ```
 
 **What the script does:**
+
 1. Moves `.log` files → `logs/`
 2. Moves `.tmp_*` files → `.tmp/`
 3. Moves build artifacts → `build-output/`
@@ -1403,6 +1405,7 @@ git status
 ### Updates to Other Sections
 
 This restructuring updates:
+
 - ✅ `.gitignore` - Centralized patterns
 - ✅ `scripts/cleanup-workspace.{ps1,sh}` - New scripts
 - ✅ `AGENTS.md` - This section

@@ -1,3 +1,5 @@
 # This directory contains build artifacts and outputs
+
 # It is gitignored but kept in the repository structure
+
 # Examples: compiled binaries, Docker images, deployment packages

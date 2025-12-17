@@ -1,6 +1,6 @@
 //! Tauri IPC Commands
 
-use crate::{CloudNode, NodeStatus, PeerInfo};
+use crate::types::{CloudNode, NodeStatus, PeerInfo};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use serde::{Serialize, Deserialize};
 use tauri::State;
@@ -21,7 +21,7 @@ pub async fn get_system_stats() -> Result<SystemStats, String> {
     let mut sys = System::new_with_specifics(
         RefreshKind::new()
             .with_cpu(CpuRefreshKind::everything())
-            .with_memory(),
+            .with_memory(sysinfo::MemoryRefreshKind::everything()),
     );
 
     // Wait a bit for CPU usage calculation
@@ -102,10 +102,3 @@ pub async fn provision_cloud_node(
     Err("Cloud provisioning not yet implemented".into())
 }
 
-/// Create Stripe checkout session
-#[tauri::command]
-pub async fn create_checkout_session(plan: String) -> Result<String, String> {
-    // TODO: Create Stripe checkout session via API
-    // Return checkout URL
-    Ok("https://checkout.stripe.com/example".into())
-}

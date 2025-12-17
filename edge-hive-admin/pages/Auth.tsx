@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
+import { LoadingState } from '../components/LoadingState';
 import {
     Users, Search, Mail, Shield, MoreVertical, UserPlus, FileCode, FlaskConical,
     CheckCircle2, XCircle, Radio, BrainCircuit, Key, Lock, ShieldCheck, Zap,
     MessageSquare, Send, RefreshCw
 } from 'lucide-react';
-import { mockApi } from '../api';
+import { tauriApi } from '../api/tauriClient';
 import { User } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { useToast } from '../context/ToastContext';
@@ -83,10 +84,16 @@ const NeuralRBACEditor = () => {
 const Auth: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [activeTab, setActiveTab] = useState<'users' | 'rbac' | 'lab'>('users');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        mockApi.getUsers().then(setUsers);
+        tauriApi.getUsers().then(u => {
+            setUsers(u);
+            setIsLoading(false);
+        });
     }, []);
+
+    if (isLoading) return <LoadingState />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-12">

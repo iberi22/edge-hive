@@ -1,6 +1,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
-import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult } from '../types';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment } from '../types';
 
 export const tauriApi = {
    // Metrics & Logs
@@ -217,7 +218,7 @@ export const tauriApi = {
          console.error("Failed to stop tunnel", e);
       }
    },
-   getTunnelStatus: async () => {
+   getTunnelStatus: async (): Promise<{ is_running: boolean; public_url: string | null }> => {
       try {
          return await invoke('get_tunnel_status');
       } catch (e) {
@@ -300,5 +301,75 @@ export const tauriApi = {
    },
    getMigrations: async () => [],
    getRLSPolicies: async () => [],
+
+   // Real-time Subscriptions
+   subscribeToMetrics: async (callback: (metric: SystemMetric) => void): Promise<UnlistenFn> => {
+      try {
+         return await listen<SystemMetric>('system_metrics', (event) => {
+            callback(event.payload);
+         });
+      } catch (e) {
+         console.error("Failed to subscribe to metrics", e);
+         return () => { };
+      }
+   },
+   subscribeToLogs: async (callback: (log: LogEntry) => void): Promise<UnlistenFn> => {
+      try {
+         return await listen<LogEntry>('log_event', (event) => {
+            callback({
+               ...event.payload,
+               level: (event.payload.level as any) || 'INFO'
+            });
+         });
+      } catch (e) {
+         console.error("Failed to subscribe to logs", e);
+         return () => { };
+      }
+   },
+   subscribeToChaos: async (callback: (exp: ChaosExperiment) => void): Promise<UnlistenFn> => {
+      try {
+         return await listen<ChaosExperiment>('chaos_update', (event) => {
+            callback(event.payload);
+         });
+      } catch (e) {
+         console.error("Failed to subscribe to chaos events", e);
+         return () => { };
+      }
+   },
+
+   // VPN Mesh
+   getVPNPeers: async (): Promise<VPNPeer[]> => {
+      try {
+         return await invoke('get_vpn_peers');
+      } catch (e) {
+         console.error("Failed to get VPN peers", e);
+         return [];
+      }
+   },
+   generateVPNConfig: async (): Promise<string> => {
+      try {
+         return await invoke('generate_vpn_config');
+      } catch (e) {
+         console.error("Failed to generate VPN config", e);
+         return "";
+      }
+   },
+
+   // Chaos Lab
+   getExperiments: async (): Promise<ChaosExperiment[]> => {
+      try {
+         return await invoke('get_experiments');
+      } catch (e) {
+         console.error("Failed to get experiments", e);
+         return [];
+      }
+   },
+   runExperiment: async (id: string): Promise<void> => {
+      try {
+         await invoke('run_experiment', { id });
+      } catch (e) {
+         console.error("Failed to run experiment", e);
+         throw e;
+      }
+   },
 };
-```

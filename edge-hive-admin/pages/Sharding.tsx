@@ -25,7 +25,7 @@ const Sharding: React.FC = () => {
     const handleAutoRebalance = () => {
         setIsRebalancing(true);
         toast.info("Surreal Mesh detected high load on HN-02. Initiating gradient sharding...", "Autonomous Rebalancing");
-        
+
         // Step 1: Mark as balancing
         setNodes(prev => prev.map(n => n.id === 'HN-02' || n.id === 'HN-04' ? { ...n, status: 'balancing' } : n));
 
@@ -53,7 +53,7 @@ const Sharding: React.FC = () => {
                     <p className="text-slate-400 text-sm mt-1 uppercase font-mono tracking-tight">Consistent Hashing Strategy: Virtual_Nodes_256</p>
                 </div>
                 <div className="flex gap-4">
-                     <button 
+                    <button
                         onClick={handleAutoRebalance}
                         disabled={isRebalancing}
                         className={`px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all flex items-center gap-2 border shadow-2xl
@@ -70,15 +70,15 @@ const Sharding: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {nodes.map(node => (
                     <div key={node.id} className={`bg-slate-900/40 backdrop-blur-md border rounded-xl p-6 transition-all relative overflow-hidden group
-                        ${node.status === 'critical' ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 
-                          node.status === 'balancing' ? 'border-hive-orange/50 shadow-neon-orange' : 'border-white/5 hover:border-white/20'}
+                        ${node.status === 'critical' ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.1)]' :
+                            node.status === 'balancing' ? 'border-hive-orange/50 shadow-neon-orange' : 'border-white/5 hover:border-white/20'}
                     `}>
                         {node.status === 'balancing' && (
                             <div className="absolute inset-0 bg-hive-orange/5 flex items-center justify-center">
                                 <Activity className="text-hive-orange animate-pulse" size={48} />
                             </div>
                         )}
-                        
+
                         <div className="relative z-10 flex flex-col h-full">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
@@ -96,8 +96,8 @@ const Sharding: React.FC = () => {
                                     <span className={node.load > 70 ? 'text-red-500' : 'text-hive-cyan'}>{node.load}%</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                    <div 
-                                        className={`h-full transition-all duration-1000 ${node.load > 70 ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : 'bg-hive-cyan shadow-neon-cyan'}`} 
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${node.load > 70 ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : 'bg-hive-cyan shadow-neon-cyan'}`}
                                         style={{ width: `${node.load}%` }}
                                     ></div>
                                 </div>
@@ -125,20 +125,20 @@ const Sharding: React.FC = () => {
             {/* Visual Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 bg-slate-900/40 border border-white/5 rounded-xl p-8 backdrop-blur-sm flex flex-col gap-8 relative overflow-hidden">
-                     <div className="flex items-center justify-between">
-                         <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
                             <Activity size={18} className="text-purple-500" />
                             Cluster Entropy Monitor
-                         </h3>
-                         <div className="flex gap-4">
+                        </h3>
+                        <div className="flex gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                 <span className="text-[10px] text-slate-500 font-mono uppercase">Lattice Stabilized</span>
                             </div>
-                         </div>
-                     </div>
-                     
-                     <div className="flex-1 flex items-center justify-around py-12">
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex items-center justify-around py-12">
                         {/* Simulation of a Mesh connection */}
                         <div className="relative w-64 h-64 border-2 border-dashed border-white/5 rounded-full flex items-center justify-center">
                             <div className="absolute inset-0 animate-spin-slow">
@@ -154,7 +154,7 @@ const Sharding: React.FC = () => {
                         </div>
 
                         <div className="space-y-6 w-64">
-                             <div className="bg-slate-950/80 p-4 rounded-lg border border-white/5">
+                            <div className="bg-slate-950/80 p-4 rounded-lg border border-white/5">
                                 <div className="flex items-center gap-3 mb-2">
                                     <ShieldCheck size={16} className="text-emerald-500" />
                                     <span className="text-[10px] font-bold text-white uppercase tracking-widest">Shard Security</span>
@@ -162,18 +162,18 @@ const Sharding: React.FC = () => {
                                 <p className="text-[9px] text-slate-500 font-mono leading-relaxed italic uppercase">
                                     Each shard is cross-verified with a lattice-based signature chain for zero-trust data movement.
                                 </p>
-                             </div>
-                             <div className="bg-slate-950/80 p-4 rounded-lg border border-white/5">
+                            </div>
+                            <div className="bg-slate-950/80 p-4 rounded-lg border border-white/5">
                                 <div className="flex items-center gap-3 mb-2">
                                     <TrendingUp size={16} className="text-hive-cyan" />
                                     <span className="text-[10px] font-bold text-white uppercase tracking-widest">Sharding Strategy</span>
                                 </div>
                                 <p className="text-[9px] text-slate-500 font-mono leading-relaxed italic uppercase">
-                                    Predictive Sharding (ML_V2) enabled. Autonomous rebalance triggered every 500ms if skew > 15%.
+                                    Predictive Sharding (ML_V2) enabled. Autonomous rebalance triggered every 500ms if skew &gt; 15%.
                                 </p>
-                             </div>
+                            </div>
                         </div>
-                     </div>
+                    </div>
                 </div>
 
                 <div className="bg-slate-900/40 border border-white/5 rounded-xl p-8 backdrop-blur-sm space-y-8">
@@ -181,7 +181,7 @@ const Sharding: React.FC = () => {
                         <Info size={18} className="text-hive-orange" />
                         Mesh Configuration
                     </h3>
-                    
+
                     <div className="space-y-6">
                         <div>
                             <label className="text-[10px] font-mono text-slate-500 uppercase block mb-3">Hashing Algorithm</label>

@@ -272,3 +272,16 @@ export interface FunctionInvocationResult {
   body: any;
   logs: string[];
 }
+
+export interface UsageMetrics {
+  api_requests: number;
+  storage_bytes: number;
+  egress_bytes: number;
+  active_nodes: number;
+}
+
+export interface Subscription {
+  plan: 'free' | 'pro' | 'team' | 'enterprise';
+  status: 'active' | 'past_due' | 'canceled';
+  current_period_end: string;
+}

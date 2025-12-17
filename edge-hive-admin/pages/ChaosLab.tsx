@@ -9,7 +9,7 @@ import { useToast } from '../context/ToastContext';
 import { ChaosExperiment } from '../types';
 
 // Initialize the Google GenAI client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "stub_key" });
 
 const ChaosLab: React.FC = () => {
     const toast = useToast();
@@ -41,7 +41,7 @@ const ChaosLab: React.FC = () => {
                 model: 'gemini-1.5-flash',
                 contents: [{ parts: [{ text: `Analyze blast radius: ${exp.type} on ${exp.target} at ${exp.intensity}%` }] }]
             });
-            setAiAnalysis(response.response.text() || "Cognitive failure.");
+            setAiAnalysis((response as any).response.text() || "Cognitive failure.");
         } catch (e) {
             setAiAnalysis("Analysis node offline.");
         } finally {

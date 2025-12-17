@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Ghost, Shield, Globe, RefreshCw, Plus, Trash2, Key,
-  Activity, ArrowRight, ShieldAlert, Cpu, Network, Binary, ShieldCheck
+import {
+    Ghost, Shield, Globe, RefreshCw, Plus, Trash2, Key,
+    Activity, ArrowRight, ShieldAlert, Cpu, Network, Binary, ShieldCheck
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { OnionService } from '../types';
+import { tauriApi } from '../api/tauriClient';
+import { LoadingState } from '../components/LoadingState';
 
 const CircuitVisualizer = () => {
     const steps = [
@@ -19,7 +21,7 @@ const CircuitVisualizer = () => {
         <div className="flex items-center justify-between p-8 bg-slate-950/50 border border-white/5 rounded-xl relative overflow-hidden group">
             {/* Pulsing connection lines */}
             <div className="absolute inset-0 flex items-center justify-center px-12 pointer-events-none">
-                 <div className="w-full h-px bg-gradient-to-r from-emerald-500/20 via-slate-400/20 to-purple-500/20 animate-pulse"></div>
+                <div className="w-full h-px bg-gradient-to-r from-emerald-500/20 via-slate-400/20 to-purple-500/20 animate-pulse"></div>
             </div>
 
             {steps.map((step, i) => (
@@ -29,7 +31,7 @@ const CircuitVisualizer = () => {
                     </div>
                     <div className="text-center">
                         <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">{step.label}</span>
-                        <div className="text-[10px] font-bold text-white font-mono mt-1">192.1{i}.{Math.floor(Math.random()*255)}</div>
+                        <div className="text-[10px] font-bold text-white font-mono mt-1">192.1{i}.{Math.floor(Math.random() * 255)}</div>
                     </div>
                 </div>
             ))}
@@ -40,18 +42,50 @@ const CircuitVisualizer = () => {
 const OnionNode: React.FC = () => {
     // Fix: useToast returns the toast object directly
     const toast = useToast();
-    const [services, setServices] = useState<OnionService[]>([
-        { id: '1', address: 'hive_core_x72k.onion', port: 80, target_node: 'HN-01', uptime: '12d 4h', status: 'active' },
-        { id: '2', address: 'admin_panel_z92.onion', port: 443, target_node: 'HN-04', uptime: '2d 1h', status: 'active' },
-        { id: '3', address: 'api_gateway_h38.onion', port: 8080, target_node: 'HN-02', uptime: '0s', status: 'rotating' },
-    ]);
+    const [services, setServices] = useState<OnionService[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const status = await tauriApi.getTunnelStatus();
+                if (status.is_running && status.public_url) {
+                    // If a tunnel is active, display it. For now adapting single tunnel status to list
+                    setServices([
+                        { id: '1', address: status.public_url, port: 8080, target_node: 'Localhost', uptime: 'Active', status: 'active' }
+                    ]);
+                } else {
+                    setServices([]);
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStatus();
+    }, []);
 
     const handleRotate = (id: string) => {
         toast.info("Rotating Onion identity keys...", "Secret Ingress");
+        // Stub for rotate functionality
         setTimeout(() => {
             toast.success("Identity rotated. New .onion address propagating.");
         }, 2000);
     };
+
+    const handleCreate = async () => {
+        try {
+            await tauriApi.startTunnel(8080);
+            const status = await tauriApi.getTunnelStatus();
+            if (status.public_url) {
+                setServices([{ id: '1', address: status.public_url, port: 8080, target_node: 'Localhost', uptime: 'Just started', status: 'active' }]);
+                toast.success("Hidden Service created successfully");
+            }
+        } catch (e) {
+            toast.error("Failed to start tunnel");
+        }
+    };
+
+    if (isLoading) return <LoadingState />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -63,7 +97,7 @@ const OnionNode: React.FC = () => {
                     </div>
                     <h1 className="text-4xl font-black text-white tracking-tighter uppercase">Onion Nodes</h1>
                 </div>
-                <button className="px-4 py-2 bg-purple-600 text-white font-bold text-[10px] rounded shadow-[0_0_15px_rgba(168,85,247,0.4)] uppercase flex items-center gap-2">
+                <button onClick={handleCreate} className="px-4 py-2 bg-purple-600 text-white font-bold text-[10px] rounded shadow-[0_0_15px_rgba(168,85,247,0.4)] uppercase flex items-center gap-2">
                     <Plus size={14} /> New Hidden Service
                 </button>
             </div>
@@ -108,8 +142,8 @@ const OnionNode: React.FC = () => {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-3">
-                                                <button onClick={() => handleRotate(s.id)} className="p-1.5 hover:bg-slate-800 rounded text-slate-500" title="Rotate Keys"><RefreshCw size={14}/></button>
-                                                <button className="p-1.5 hover:bg-red-500/10 rounded text-slate-500 hover:text-red-500"><Trash2 size={14}/></button>
+                                                <button onClick={() => handleRotate(s.id)} className="p-1.5 hover:bg-slate-800 rounded text-slate-500" title="Rotate Keys"><RefreshCw size={14} /></button>
+                                                <button className="p-1.5 hover:bg-red-500/10 rounded text-slate-500 hover:text-red-500"><Trash2 size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -147,14 +181,14 @@ const OnionNode: React.FC = () => {
                             Dark Traffic
                         </h4>
                         <div className="space-y-3">
-                             <div className="flex justify-between text-[10px] font-mono">
-                                 <span className="text-slate-500 uppercase">Requests (24h)</span>
-                                 <span className="text-white">12,402</span>
-                             </div>
-                             <div className="flex justify-between text-[10px] font-mono">
-                                 <span className="text-slate-500 uppercase">Bandwidth</span>
-                                 <span className="text-white">1.2 GB</span>
-                             </div>
+                            <div className="flex justify-between text-[10px] font-mono">
+                                <span className="text-slate-500 uppercase">Requests (24h)</span>
+                                <span className="text-white">12,402</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-mono">
+                                <span className="text-slate-500 uppercase">Bandwidth</span>
+                                <span className="text-white">1.2 GB</span>
+                            </div>
                         </div>
                     </div>
                 </div>

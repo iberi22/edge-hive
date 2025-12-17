@@ -6,7 +6,7 @@ Cleanup and reorganize logs, temp files, and build artifacts according to indust
 .DESCRIPTION
 This script:
 1. Moves all .log files to logs/ directory
-2. Moves all .tmp_* and .tmp files to .tmp/ directory  
+2. Moves all .tmp_* and .tmp files to .tmp/ directory
 3. Organizes build outputs to build-output/
 4. Updates scripts to use new directory structure
 5. Cleans root directory following Git-Core Protocol standards

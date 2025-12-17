@@ -176,7 +176,7 @@ const Storage: React.FC = () => {
                                                 <div className="space-y-4">
                                                     <div className="flex justify-between items-end">
                                                         <div>
-                                                            <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">L1 (Fast) -> L2 (Warm) Archival</span>
+                                                            <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">L1 (Fast) {'->'} L2 (Warm) Archival</span>
                                                             <p className="text-[9px] text-slate-600">Move to SSD if unaccessed for</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-hive-cyan font-mono">{tieringRules.move_to_warm} Days</span>
@@ -187,7 +187,7 @@ const Storage: React.FC = () => {
                                                 <div className="space-y-4">
                                                     <div className="flex justify-between items-end">
                                                         <div>
-                                                            <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">L2 (Warm) -> L3 (Cold) Archival</span>
+                                                            <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">L2 (Warm) {'->'} L3 (Cold) Archival</span>
                                                             <p className="text-[9px] text-slate-600">Move to S3 Glacier if unaccessed for</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-blue-500 font-mono">{tieringRules.move_to_cold} Days</span>

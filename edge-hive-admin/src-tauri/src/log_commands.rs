@@ -1,4 +1,3 @@
-use crate::LogEntry;
 use tauri::State;
 use std::sync::{Arc, Mutex};
 

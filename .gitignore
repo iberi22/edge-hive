@@ -85,19 +85,42 @@ secrets/
 *.AppImage
 
 # ============================================
-# LOGS
+# LOGS & OUTPUT (STRUCTURED - Industry Standard)
 # ============================================
-*.log
+# Centralized log directory (Git-ignored, but tracked in repo)
 logs/
+build-output/
+
+# Build logs (keep these in logs/)
+*.log
+build-*.log
+test-*.log
+deploy-*.log
+serve-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 # ============================================
+# TEMPORARY FILES (STRUCTURED - Industry Standard)
+# ============================================
+# Centralized temp directory (Git-ignored, but .gitkeep present)
+.tmp/
+
+# Legacy root-level temp files (migrate to .tmp/)
+.tmp_*
+*.tmp
+*.bak
+tmp/
+temp/
+
+# ============================================
 # IDE
 # ============================================
 .idea/
-.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
 *.swp
 *.swo
 *~
@@ -112,12 +135,23 @@ coverage/
 *.lcov
 
 # ============================================
-# TEMPORARY FILES
+# SCRIPT OUTPUT (keep in logs/)
 # ============================================
-tmp/
-temp/
-*.tmp
-*.bak
+test-output.txt
+test-results.txt
+test-identity.txt
+test-status.log
+test-final.log
+test-core.log
+test-identity.log
+test-all.log
+build-cli.txt
+build-app.log
+build-core.log
+build-docker.log
+build-identity.log
+build-tunnel.log
+serve-test.log
 # ============================================
 # deprecated
 # ============================================

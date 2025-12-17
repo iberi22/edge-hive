@@ -1240,6 +1240,176 @@ AGENTS.md                  → Protocol rules (all projects)
 
 ---
 
+## � Directory Organization Standards
+
+> **Industry Standard: Separate build, logs, and temp artifacts from project root**
+
+Following GNU Coding Standards, POSIX conventions, and best practices from major open-source projects (Linux kernel, LLVM, CMake, Rust ecosystem).
+
+### Rationale (Industry Best Practices)
+
+| Standard | Benefit | References |
+|----------|---------|------------|
+| **Centralized logs/** | Easy cleanup, can .gitignore cleanly | GNU, Linux kernel |
+| **Centralized .tmp/** | Prevents root clutter, improves git status | POSIX, CMake |
+| **Centralized build-output/** | Separates artifacts from source | Linux, LLVM, Rust |
+| **No .tmp_* in root** | Cleaner git diff, industry standard | GitHub best practices |
+
+### Directory Structure (Git-Core v3.2+)
+
+```text
+/
+├── .tmp/                      # ⏱️ Temporary files (git-ignored)
+│   ├── .gitkeep               # Track directory in Git
+│   ├── ai-analysis.txt
+│   ├── performance-test.json
+│   └── debug-output.log
+│
+├── logs/                       # 📝 Build & test logs (git-ignored)
+│   ├── .gitkeep               # Track directory in Git
+│   ├── build-cli.log
+│   ├── build-core.log
+│   ├── test-results.log
+│   └── deployment.log
+│
+├── build-output/              # 🔨 Build artifacts (git-ignored)
+│   ├── .gitkeep               # Track directory in Git
+│   ├── edge-hive.exe
+│   ├── docker-image.tar
+│   └── release-v1.0.0/
+│
+├── crates/                     # 🦀 Rust workspace
+├── docs/                       # 📖 Documentation
+├── scripts/                    # 🔧 Automation scripts
+├── AGENTS.md                   # THIS FILE
+└── .gitignore                  # Configured to ignore above dirs
+```
+
+### File Organization Rules (Git-Core Protocol v3.2)
+
+| File Type | Location | Git-ignore | Cleanup Script |
+|-----------|----------|-----------|-----------------|
+| Build logs | `logs/` | `✅ YES` | `cleanup-workspace.ps1` |
+| Test output | `logs/` | `✅ YES` | `cleanup-workspace.ps1` |
+| Temp scripts | `.tmp/` | `✅ YES` | `cleanup-workspace.ps1` |
+| Temp analysis | `.tmp/` | `✅ YES` | `cleanup-workspace.ps1` |
+| Build artifacts | `build-output/` | `✅ YES` | `cleanup-workspace.ps1` |
+| Docker images | `build-output/` | `✅ YES` | Manual cleanup |
+| Release packages | `build-output/` | `✅ YES` | Manual cleanup |
+
+### Configuration in .gitignore
+
+```bash
+# Logs & Output (structured)
+logs/
+build-output/
+*.log
+.tmp_*              # Legacy - migrate to .tmp/
+tmp/                # Legacy - use .tmp/
+
+# Temporary files (structured)
+.tmp/
+*.tmp
+*.bak
+```
+
+### Cleanup & Maintenance
+
+**Automatic Cleanup Script:**
+```bash
+# Windows
+./scripts/cleanup-workspace.ps1
+
+# Linux/macOS
+./scripts/cleanup-workspace.sh
+
+# Preview without moving
+./scripts/cleanup-workspace.ps1 -DryRun
+```
+
+**What the script does:**
+1. Moves `.log` files → `logs/`
+2. Moves `.tmp_*` files → `.tmp/`
+3. Moves build artifacts → `build-output/`
+4. Updates documentation
+5. Maintains `.gitkeep` files
+
+### Integration with CI/CD
+
+Add to GitHub Actions workflows:
+
+```yaml
+- name: Archive logs on failure
+  if: failure()
+  run: |
+    mkdir -p logs
+    mv *.log logs/ 2>/dev/null || true
+
+- name: Clean workspace
+  run: ./scripts/cleanup-workspace.ps1
+```
+
+### Integration with Scripts
+
+All scripts should write to organized directories:
+
+```bash
+# ❌ OLD (Don't do this)
+echo "output" > analysis.txt
+cargo build > build.log
+
+# ✅ NEW (Do this)
+echo "output" > .tmp/analysis.txt
+cargo build > logs/build.log
+```
+
+### Migration from Legacy Structure
+
+If you have existing files in root:
+
+```bash
+# 1. Backup (safety)
+git status
+
+# 2. Run cleanup
+./scripts/cleanup-workspace.ps1  # Preview
+./scripts/cleanup-workspace.ps1  # Execute
+
+# 3. Commit reorganization
+git add -A
+git commit -m "chore: reorganize logs and temp files per Git-Core Protocol v3.2"
+
+# 4. Verify
+git status  # Should show clean root
+```
+
+### Directory Permissions
+
+- `logs/` - Writable by CI/CD, readable by developers
+- `.tmp/` - Writable by all scripts
+- `build-output/` - Writable by build scripts, readable by testers
+
+### Monitoring
+
+Check workspace cleanliness:
+
+```bash
+# Show all non-ignored files in root
+git status
+
+# Should only show tracked files (no .tmp_*, *.log, etc.)
+```
+
+### Updates to Other Sections
+
+This restructuring updates:
+- ✅ `.gitignore` - Centralized patterns
+- ✅ `scripts/cleanup-workspace.{ps1,sh}` - New scripts
+- ✅ `AGENTS.md` - This section
+- ✅ CI/CD workflows - Should reference new directories
+
+---
+
 ## 📁 Project Structure Awareness
 
 ```text
@@ -1252,13 +1422,18 @@ AGENTS.md                  → Protocol rules (all projects)
 │   ├── copilot-instructions.md
 │   ├── workflows/         # 🔄 CI/CD automation
 │   └── ISSUE_TEMPLATE/
+├── .tmp/                  # ⏱️ Temporary files (git-ignored)
+├── logs/                  # 📝 Build & test logs (git-ignored)
+├── build-output/          # 🔨 Build artifacts (git-ignored)
 ├── docs/
 │   ├── agent-docs/        # 📄 User-requested documents ONLY
 │   └── COMMIT_STANDARD.md # 📝 Commit message standard
 ├── scripts/
-│   ├── init_project.sh    # 🚀 Bootstrap script
-│   ├── install-cli.sh     # 🛠️ CLI installer (Linux/macOS)
-│   └── install-cli.ps1    # 🛠️ CLI installer (Windows)
+│   ├── init_project.sh                 # 🚀 Bootstrap script
+│   ├── cleanup-workspace.ps1           # 🧹 NEW: Organize artifacts
+│   ├── cleanup-workspace.sh            # 🧹 NEW: Organize artifacts
+│   ├── install-cli.sh                  # 🛠️ CLI installer (Linux/macOS)
+│   └── install-cli.ps1                 # 🛠️ CLI installer (Windows)
 ├── tools/
 │   └── git-core-cli/      # 🦀 Official Rust CLI
 ├── AGENTS.md              # 📋 YOU ARE HERE
@@ -1267,5 +1442,6 @@ AGENTS.md                  → Protocol rules (all projects)
 
 ---
 
-*Protocol Version: 1.4.0*
-*Last Updated: 2025*
+*Protocol Version: 3.2.1*
+*Last Updated: 2025-12-17*
+*Standards: GNU Coding Standards, POSIX conventions, GitHub best practices*

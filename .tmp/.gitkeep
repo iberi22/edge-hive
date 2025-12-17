@@ -1,0 +1,6 @@
+# This directory contains temporary files generated during development
+# It is gitignored but kept in the repository structure
+# All temp files should be written here, NOT to the root directory
+#
+# Industry Standard: Temporary files should be isolated from project root
+# Reference: GNU Coding Standards, POSIX conventions

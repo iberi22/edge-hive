@@ -1,6 +1,98 @@
 ---
 import AdminLayout from '../layouts/AdminLayout.astro';
+import Card from '../components/ui/Card.svelte';
+import Button from '../components/ui/Button.svelte';
+import Input from '../components/ui/Input.svelte';
+import Badge from '../components/ui/Badge.svelte';
+import { IconDatabase, IconTable, IconSearch, IconPlus } from '@tabler/icons-svelte';
 ---
+
 <AdminLayout>
-  <h1 class="text-2xl font-bold">Database Explorer</h1>
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-textHeading font-sans tracking-tight">Database Explorer</h1>
+        <p class="text-muted mt-1 font-sans">Manage your SurrealDB instances and data.</p>
+      </div>
+      <div class="flex gap-3">
+        <Button variant="outline" size="sm">
+          <IconDatabase size={16} class="mr-2" />
+          Connect
+        </Button>
+        <Button variant="primary" size="sm">
+          <IconPlus size={16} class="mr-2" />
+          New Query
+        </Button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
+      <!-- Sidebar: Tables -->
+      <Card class="lg:col-span-1 flex flex-col h-full p-0 overflow-hidden" hud={false}>
+        <div class="p-4 border-b border-glass-border bg-surface/20">
+          <Input placeholder="Search tables..." class="bg-surface/50">
+            <IconSearch slot="icon" size={16} />
+          </Input>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+          {#each ['users', 'nodes', 'metrics', 'logs', 'sessions', 'api_keys'] as table}
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surfaceHighlight text-muted hover:text-textHeading transition-colors text-sm font-mono group">
+              <IconTable size={16} class="text-muted group-hover:text-primary transition-colors" />
+              {table}
+              <span class="ml-auto text-xs text-muted opacity-50">1.2k</span>
+            </button>
+          {/each}
+        </div>
+      </Card>
+
+      <!-- Main: Query/Results -->
+      <Card class="lg:col-span-3 flex flex-col h-full p-0 overflow-hidden" hud={true}>
+        <!-- Toolbar -->
+        <div class="p-3 border-b border-glass-border bg-surface/20 flex items-center gap-2">
+          <Badge variant="info">SELECT * FROM nodes</Badge>
+          <div class="ml-auto flex gap-2">
+            <Button variant="ghost" size="sm">History</Button>
+            <Button variant="primary" size="sm">Run</Button>
+          </div>
+        </div>
+
+        <!-- Editor Area (Mock) -->
+        <div class="h-1/3 bg-surface/30 p-4 font-mono text-sm text-textBody border-b border-glass-border">
+          <span class="text-primary">SELECT</span> * <span class="text-primary">FROM</span> nodes <span class="text-primary">WHERE</span> status = <span class="text-success">'online'</span>;
+        </div>
+
+        <!-- Results Area -->
+        <div class="flex-1 bg-surface/10 overflow-auto">
+          <table class="w-full text-left text-sm text-muted font-mono">
+            <thead class="bg-surface/40 text-textBody sticky top-0">
+              <tr>
+                <th class="px-4 py-2 border-b border-glass-border">id</th>
+                <th class="px-4 py-2 border-b border-glass-border">name</th>
+                <th class="px-4 py-2 border-b border-glass-border">status</th>
+                <th class="px-4 py-2 border-b border-glass-border">ip</th>
+                <th class="px-4 py-2 border-b border-glass-border">last_seen</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-glass-border">
+              {#each [1, 2, 3, 4, 5] as i}
+                <tr class="hover:bg-surfaceHighlight/50 transition-colors">
+                  <td class="px-4 py-2 text-primary">node:{i}</td>
+                  <td class="px-4 py-2 text-textHeading">Edge-{i.toString().padStart(2, '0')}</td>
+                  <td class="px-4 py-2"><Badge variant="success" size="sm">online</Badge></td>
+                  <td class="px-4 py-2">192.168.1.{10+i}</td>
+                  <td class="px-4 py-2 text-muted">2023-10-27T10:00:00Z</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="p-2 border-t border-glass-border bg-surface/20 text-xs text-muted flex justify-between px-4">
+          <span>5 results in 0.023s</span>
+          <span>Ln 1, Col 42</span>
+        </div>
+      </Card>
+    </div>
+  </div>
 </AdminLayout>

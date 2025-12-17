@@ -1,43 +1,45 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { Terminal } from 'xterm';
-  import { FitAddon } from '@xterm/addon-fit';
-  import { WebLinksAddon } from '@xterm/addon-web-links';
   import { invoke } from '@tauri-apps/api/core';
   import { listen } from '@tauri-apps/api/event';
   import 'xterm/css/xterm.css';
 
   let terminalContainer: HTMLElement;
-  let terminal: Terminal | null = null;
-  let fitAddon: FitAddon | null = null;
+  let terminal: any = null;
+  let fitAddon: any = null;
   let unlisten: (() => void) | null = null;
 
   onMount(async () => {
+    // Dynamic import to avoid SSR issues
+    const { Terminal } = await import('xterm');
+    const { FitAddon } = await import('@xterm/addon-fit');
+    const { WebLinksAddon } = await import('@xterm/addon-web-links');
+
     // Initialize terminal
     terminal = new Terminal({
       cursorBlink: true,
       fontSize: 14,
-      fontFamily: '"Cascadia Code", "JetBrains Mono", Consolas, monospace',
+      fontFamily: '"Fira Code", "JetBrains Mono", Consolas, monospace',
       theme: {
-        background: '#0f172a',
-        foreground: '#e2e8f0',
-        cursor: '#60a5fa',
-        cursorAccent: '#1e293b',
-        selection: '#334155',
-        black: '#1e293b',
+        background: '#020617', // slate-950
+        foreground: '#cbd5e1', // slate-300
+        cursor: '#f97316', // orange-500
+        cursorAccent: '#020617',
+        selectionBackground: '#334155', // slate-700
+        black: '#020617',
         red: '#ef4444',
         green: '#10b981',
-        yellow: '#f59e0b',
-        blue: '#3b82f6',
-        magenta: '#a855f7',
+        yellow: '#f97316', // orange-500 (primary)
+        blue: '#0ea5e9', // sky-500 (secondary)
+        magenta: '#8b5cf6',
         cyan: '#06b6d4',
-        white: '#f1f5f9',
+        white: '#f8fafc',
         brightBlack: '#475569',
         brightRed: '#f87171',
         brightGreen: '#34d399',
         brightYellow: '#fbbf24',
-        brightBlue: '#60a5fa',
-        brightMagenta: '#c084fc',
+        brightBlue: '#38bdf8',
+        brightMagenta: '#a78bfa',
         brightCyan: '#22d3ee',
         brightWhite: '#ffffff',
       },

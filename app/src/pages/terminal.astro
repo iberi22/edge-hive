@@ -1,25 +1,25 @@
 ---
-import AdminLayout from '@/layouts/AdminLayout.astro';
-import Terminal from '@/components/terminal/Terminal.svelte';
+import AdminLayout from '../layouts/AdminLayout.astro';
+import Terminal from '../components/terminal/Terminal.svelte';
+import Badge from '../components/ui/Badge.svelte';
+import Card from '../components/ui/Card.svelte';
 ---
 
-<AdminLayout title="Terminal" currentPath="/terminal">
-  <div class="terminal-page">
-    <div class="terminal-grid">
-      <Terminal client:load />
+<AdminLayout>
+  <div class="h-[calc(100vh-8rem)] flex flex-col">
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h1 class="text-2xl font-bold text-textHeading font-sans tracking-tight">System Terminal</h1>
+        <p class="text-muted mt-1 font-sans">Direct shell access to the edge node.</p>
+      </div>
+      <div class="flex gap-2">
+        <Badge variant="success" class="font-mono">SSH: ACTIVE</Badge>
+        <Badge variant="primary" class="font-mono">PTY: READY</Badge>
+      </div>
     </div>
+    
+    <Card hud={true} noPadding={true} class="flex-1 bg-surface/90 shadow-2xl">
+      <Terminal client:load />
+    </Card>
   </div>
 </AdminLayout>
-
-<style>
-  .terminal-page {
-    padding: 24px;
-    height: calc(100vh - 64px); /* Full height minus header */
-  }
-
-  .terminal-grid {
-    height: 100%;
-    display: grid;
-    gap: 24px;
-  }
-</style>

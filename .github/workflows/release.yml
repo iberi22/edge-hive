@@ -44,7 +44,7 @@ jobs:
             name: edge-hive-macos-arm64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-action@stable
@@ -68,7 +68,7 @@ jobs:
       matrix:
         target: [aarch64-linux-android, armv7-linux-androideabi]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-action@stable

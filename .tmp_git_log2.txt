@@ -1,0 +1,3 @@
+4301ea9 feat(realtime): add WebSocket realtime server scaffold
+5428b2c feat(api): implement unified API Gateway with middleware stack
+fbea306 feat(cache): implement two-tier cache layer (moka + mini-redis)

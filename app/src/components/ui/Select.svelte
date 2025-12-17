@@ -19,7 +19,7 @@
       {label}
     </label>
   {/if}
-  
+
   <div class="relative">
     <select
       {id}

@@ -68,7 +68,7 @@ if ($client) {
     Write-Host "   Client ID: $($client.client_id)"
     Write-Host "   Client Secret: $($client.client_secret)"
     Write-Host "   Scopes: $($client.scopes -join ', ')"
-    
+
     # Save credentials for next tests
     $global:ClientId = $client.client_id
     $global:ClientSecret = $client.client_secret
@@ -84,15 +84,15 @@ if ($global:ClientId -and $global:ClientSecret) {
         client_secret = $global:ClientSecret
         scope = "mcp:read mcp:call"
     }
-    
+
     $token = Test-Endpoint -Name "Get Token" -Url "$BaseUrl/mcp/auth/token" -Method "POST" -Body $tokenBody
-    
+
     if ($token) {
         Write-Host "   Access Token: $($token.access_token.Substring(0, 30))..."
         Write-Host "   Token Type: $($token.token_type)"
         Write-Host "   Expires In: $($token.expires_in) seconds"
         Write-Host "   Scope: $($token.scope)"
-        
+
         $global:AccessToken = $token.access_token
     }
 } else {
@@ -118,9 +118,9 @@ if ($global:AccessToken) {
     $authHeaders = @{
         Authorization = "Bearer $global:AccessToken"
     }
-    
+
     $nodeInfo = Test-Endpoint -Name "Get Node Info" -Url "$BaseUrl/api/v1/node" -Headers $authHeaders
-    
+
     if ($nodeInfo) {
         Write-Host "   Node: $($nodeInfo.name)"
         Write-Host "   Peer ID: $($nodeInfo.peer_id)"
@@ -144,16 +144,16 @@ if ($global:AccessToken) {
     try {
         $parts = $global:AccessToken.Split('.')
         $payload = $parts[1]
-        
+
         # Add padding if needed
         $padding = 4 - ($payload.Length % 4)
         if ($padding -ne 4) {
             $payload += "=" * $padding
         }
-        
+
         $decoded = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload))
         $claims = $decoded | ConvertFrom-Json
-        
+
         Write-Host "   Subject (client_id): $($claims.sub)"
         Write-Host "   Issuer: $($claims.iss)"
         Write-Host "   Audience: $($claims.aud)"
@@ -172,7 +172,7 @@ Write-Host ""
 Write-Host "Test 8: Revoke OAuth2 Client" -ForegroundColor Magenta
 if ($global:ClientId) {
     $null = Test-Endpoint -Name "Revoke Client" -Url "$BaseUrl/mcp/auth/clients/$global:ClientId" -Method "DELETE"
-    
+
     # Try to use revoked credentials
     Write-Host "   Verifying revocation..."
     $tokenBody = @{
@@ -180,9 +180,9 @@ if ($global:ClientId) {
         client_id = $global:ClientId
         client_secret = $global:ClientSecret
     }
-    
+
     $revokedTest = Test-Endpoint -Name "Revoked Client Test" -Url "$BaseUrl/mcp/auth/token" -Method "POST" -Body $tokenBody
-    
+
     if ($null -eq $revokedTest) {
         Write-Host "   ✅ Revocation confirmed (token request failed as expected)" -ForegroundColor Green
     } else {

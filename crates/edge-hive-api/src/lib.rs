@@ -104,7 +104,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let db_path = dir.path().join("test.db");
         let db = std::sync::Arc::new(edge_hive_db::DatabaseService::new(&db_path).await.unwrap());
-        let state = ApiState::new_minimal(cache, db);
+        let state = ApiState::new_minimal(cache, db, dir.path().to_path_buf());
         let router = create_router(state);
 
         // Router should be created without panic

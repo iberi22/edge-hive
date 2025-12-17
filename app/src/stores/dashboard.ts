@@ -3,6 +3,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { mcpClient } from '$lib/mcp-client';
 import type { DashboardStats as MCPDashboardStats, Node as MCPNode } from '$lib/mcp-client';
 
+// Check environment
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
 export interface Node {
    id: string;
    name: string;
@@ -49,8 +52,41 @@ export const stats = writable<DashboardStats>(initialStats);
 export const dashboardActions = {
    refresh: async () => {
       try {
-         // Fetch real system stats from Rust backend
-         const sysStats = await invoke<SystemStats>('get_system_stats');
+         let sysStats: SystemStats;
+
+         if (isTauri) {
+            // Fetch real system stats from Rust backend via Tauri IPC
+            sysStats = await invoke<SystemStats>('get_system_stats');
+         } else {
+            // Fallback for browser dev
+            // Try to fetch from local backend if available, else mock
+            try {
+               const res = await fetch('http://localhost:8080/api/v1/info');
+               if (res.ok) {
+                  // The info endpoint doesn't return exact stats structure, so we mock it for now
+                  // or we could add a stats endpoint to the backend.
+                  // For now, let's return dynamic mock data
+                  sysStats = {
+                     cpu_usage: Math.random() * 20 + 10,
+                     total_memory: 16 * 1024 * 1024 * 1024,
+                     used_memory: (Math.random() * 4 + 4) * 1024 * 1024 * 1024,
+                     total_swap: 0,
+                     used_swap: 0
+                  };
+               } else {
+                  throw new Error('Backend not reachable');
+               }
+            } catch (e) {
+               // Pure mock
+               sysStats = {
+                  cpu_usage: 15,
+                  total_memory: 16 * 1024 * 1024 * 1024,
+                  used_memory: 8 * 1024 * 1024 * 1024,
+                  total_swap: 0,
+                  used_swap: 0
+               };
+            }
+         }
 
          stats.update(s => ({
             ...s,
@@ -67,7 +103,7 @@ export const dashboardActions = {
             total_tunnels: 0, // TODO: Get from tunnel service
          });
 
-         console.log('Dashboard refreshed with real data:', sysStats);
+         console.log('Dashboard refreshed with data:', sysStats);
       } catch (error) {
          console.error('Failed to fetch system stats:', error);
          // Fallback or error handling

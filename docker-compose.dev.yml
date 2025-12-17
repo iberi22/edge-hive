@@ -1,0 +1,55 @@
+# Docker Compose para desarrollo local simple (single node con frontend)
+version: "3.9"
+
+services:
+  edge-hive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: edge-hive:latest
+    container_name: edge-hive-dev
+    hostname: edge-hive-dev
+    environment:
+      - RUST_LOG=debug
+      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
+      - EDGE_HIVE_NODE_NAME=dev-node
+    ports:
+      - "8080:8080" # HTTP API y Frontend
+      - "4001:4001/udp" # libp2p QUIC
+    networks:
+      - edgehive_net
+    volumes:
+      - edge-hive-data:/data
+      # Hot reload para desarrollo (opcional, comentado por defecto)
+      # - ./app/dist:/app/app/dist:ro
+    restart: unless-stopped
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        echo "🚀 Starting Edge Hive in development mode..."
+        edge-hive identity show --config-dir /data/.edge-hive >/dev/null 2>&1 || edge-hive identity new --config-dir /data/.edge-hive
+        exec edge-hive start --config-dir /data/.edge-hive --port 8080
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+networks:
+  edgehive_net:
+    driver: bridge
+
+volumes:
+  edge-hive-data:
+    driver: local

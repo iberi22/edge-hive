@@ -36,8 +36,8 @@ COMMERCIAL LICENSES
 Businesses wishing to use Edge Hive commercially before the Change Date
 can obtain a commercial license by contacting:
 
-  📧 licensing@edge-hive.io
-  🌐 https://edge-hive.io/licensing
+  📧 <licensing@edge-hive.io>
+  🌐 <https://edge-hive.io/licensing>
 
 TRADEMARKS
 ----------
@@ -45,25 +45,36 @@ TRADEMARKS
 "Edge Hive" and the Edge Hive logo are trademarks of Edge Hive Developers.
 Use of these trademarks requires explicit permission.
 
-PATENTS
--------
+Registration options:
+  🇨🇴 Colombia (SIC): ~$200-400 USD, 6-12 months
+  🇺🇸 USA (USPTO): ~$250-350 USD, 8-12 months (recommended for global protection)
 
-Mexico does not allow software-only patents. This software is protected by:
-  - Copyright (automatic upon creation)
-  - Business Source License (contractual protection)
-  - Trademark registration (pending/planned)
+PATENTS & COPYRIGHT
+-------------------
+
+Colombia (like most countries) does not allow software-only patents.
+This software is protected by:
+
+- Copyright (automatic upon creation, governed by Ley 23 de 1982)
+- Business Source License (contractual protection)
+- Trademark registration (pending/planned)
+
+Optional registration:
+  🇨🇴 DNDA (Dirección Nacional de Derecho de Autor): ~$15 USD
+  🇺🇸 US Copyright Office: ~$65 USD (if targeting US market)
 
 ENFORCEMENT
 -----------
 
 Violation of this license may result in:
-  - Immediate license termination
-  - Legal action for damages
-  - Permanent ban from all Edge Hive services
 
-For questions about licensing, contact: legal@edge-hive.io
+- Immediate license termination
+- Legal action for damages
+- Permanent ban from all Edge Hive services
+
+For questions about licensing, contact: <legal@edge-hive.io>
 
 ---
 
 Full license text: see LICENSE file
-License source: https://mariadb.com/bsl11/
+License source: <https://mariadb.com/bsl11/>

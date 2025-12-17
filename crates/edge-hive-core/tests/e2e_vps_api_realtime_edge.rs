@@ -46,7 +46,7 @@ async fn spawn_test_server() -> TestServer {
     let db = Arc::new(edge_hive_db::DatabaseService::new(&db_path).await.expect("db"));
     let realtime = edge_hive_realtime::RealtimeServer::new(edge_hive_realtime::RealtimeServerConfig::default())
         .with_db(db.clone());
-    let api_state = edge_hive_api::ApiState::new(cache, db, realtime);
+    let api_state = edge_hive_api::ApiState::new(cache, db, realtime, data_dir.clone());
     let api_router = edge_hive_api::create_router(api_state);
 
     let app = server::build_router()

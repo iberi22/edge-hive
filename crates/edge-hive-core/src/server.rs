@@ -5,12 +5,14 @@ use axum::{
     Router,
     Json,
     extract::{Extension, Path, Request},
-    response::{Response, IntoResponse, sse::{Event, Sse}},
+    response::{IntoResponse, sse::{Event, Sse}},
     http::{StatusCode, header},
 };
 use serde::{Deserialize, Serialize};
 use tower_http::cors::CorsLayer;
-use tracing::{info, error};
+use tower_http::services::{ServeDir, ServeFile};
+use tower_http::set_status::SetStatus;
+use tracing::info;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use edge_hive_discovery::{DiscoveryService, PeerInfo};
@@ -18,9 +20,76 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use crate::auth::{OAuth2State, verify_bearer_token};
-use futures::{stream::{self, Stream}, StreamExt};
+use futures::{stream::Stream, StreamExt};
 use std::convert::Infallible;
 use std::time::Duration;
+
+async fn serve_static_file(uri: axum::http::Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let static_root = cwd.join("app/dist");
+
+    tracing::info!("Static file request: path={}, cwd={:?}, root={:?}", path, cwd, static_root);
+
+    // If path is empty, serve index.html
+    let file_path = if path.is_empty() || path == "index.html" {
+        static_root.join("index.html")
+    } else {
+        static_root.join(path)
+    };
+
+    match tokio::fs::read(&file_path).await {
+        Ok(contents) => {
+            let mime = mime_guess::from_path(&file_path)
+                .first_or_octet_stream()
+                .to_string();
+            (
+                [(header::CONTENT_TYPE, mime)],
+                contents
+            ).into_response()
+        }
+        Err(_) => {
+            // Fallback to index.html for SPA routing
+            match tokio::fs::read(static_root.join("index.html")).await {
+                Ok(contents) => (
+                    [(header::CONTENT_TYPE, "text/html")],
+                    contents
+                ).into_response(),
+                Err(_) => (
+                    StatusCode::NOT_FOUND,
+                    "404 Not Found"
+                ).into_response()
+            }
+        }
+    }
+}
+
+fn spa_static_service() -> ServeDir<SetStatus<ServeFile>> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let from_cwd = cwd.join("app/dist");
+    let from_manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../app/dist");
+
+    let static_dir = if from_cwd.exists() {
+        from_cwd
+    } else if from_manifest.exists() {
+        from_manifest
+    } else {
+        // Fall back to the expected relative path.
+        PathBuf::from("app/dist")
+    };
+
+    let index_html = static_dir.join("index.html");
+    info!(
+        "📁 Static root: {} (index.html exists: {})",
+        static_dir.display(),
+        index_html.exists()
+    );
+
+    ServeDir::new(static_dir)
+        .append_index_html_on_directories(true)
+        .not_found_service(ServeFile::new(index_html))
+}
 
 #[derive(Serialize)]
 struct HealthResponse {
@@ -154,6 +223,7 @@ async fn mcp_stream(
 
 /// MCP tool call endpoint
 async fn mcp_tool_call(
+    Extension(state): Extension<AppState>,
     Extension(oauth_state): Extension<OAuth2State>,
     headers: axum::http::HeaderMap,
     Json(payload): Json<serde_json::Value>,
@@ -190,6 +260,86 @@ async fn mcp_tool_call(
                         "text": "Node: edge-hive-node\nStatus: Running\nUptime: 1234s"
                     }]
                 }),
+                "edge_function_create" => {
+                    let name = params
+                        .and_then(|p| p.get("arguments"))
+                        .and_then(|a| a.get("name"))
+                        .and_then(|n| n.as_str())
+                        .unwrap_or("");
+
+                    let template = params
+                        .and_then(|p| p.get("arguments"))
+                        .and_then(|a| a.get("template"))
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::json!({}));
+
+                    let valid_name = !name.is_empty()
+                        && name
+                            .chars()
+                            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+
+                    if !valid_name {
+                        serde_json::json!({
+                            "error": {
+                                "code": -32602,
+                                "message": "Invalid function name (use [A-Za-z0-9_-])"
+                            }
+                        })
+                    } else {
+                        let functions_dir = state.data_dir.join("edge-functions");
+                        if let Err(e) = fs::create_dir_all(&functions_dir) {
+                            serde_json::json!({
+                                "error": {"code": -32000, "message": format!("Failed to create edge-functions dir: {}", e)}
+                            })
+                        } else {
+                            let path = functions_dir.join(format!("{}.json", name));
+                            let bytes = match serde_json::to_vec_pretty(&template) {
+                                Ok(b) => b,
+                                Err(e) => {
+                                    return Ok(Json(serde_json::json!({
+                                        "error": {"code": -32000, "message": format!("Failed to serialize template: {}", e)}
+                                    })));
+                                }
+                            };
+
+                            match fs::write(&path, bytes) {
+                                Ok(_) => serde_json::json!({
+                                    "content": [{
+                                        "type": "text",
+                                        "text": format!("Edge function '{}' created at {}", name, path.display())
+                                    }]
+                                }),
+                                Err(e) => serde_json::json!({
+                                    "error": {"code": -32000, "message": format!("Failed to write function file: {}", e)}
+                                }),
+                            }
+                        }
+                    }
+                }
+                "edge_function_list" => {
+                    let functions_dir = state.data_dir.join("edge-functions");
+                    let mut names: Vec<String> = Vec::new();
+
+                    if let Ok(entries) = fs::read_dir(&functions_dir) {
+                        for entry in entries.flatten() {
+                            let path = entry.path();
+                            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                                continue;
+                            }
+                            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                                names.push(stem.to_string());
+                            }
+                        }
+                    }
+                    names.sort();
+
+                    serde_json::json!({
+                        "content": [{
+                            "type": "text",
+                            "text": serde_json::json!({"functions": names}).to_string()
+                        }]
+                    })
+                }
                 "provision_node" => {
                     let node_name = params
                         .and_then(|p| p.get("arguments"))
@@ -296,7 +446,6 @@ pub fn build_router() -> Router {
         .route("/api/v1/messages/:peer_id", get(get_messages))
         .merge(auth_routes)
         .merge(mcp_routes)
-        .layer(CorsLayer::permissive())
 }
 
 /// Run the HTTP/HTTPS server
@@ -331,11 +480,12 @@ pub async fn run(
     let db = Arc::new(edge_hive_db::DatabaseService::new(&db_path).await?);
     let realtime = edge_hive_realtime::RealtimeServer::new(edge_hive_realtime::RealtimeServerConfig::default())
         .with_db(db.clone());
-    let api_state = edge_hive_api::ApiState::new(cache, db, realtime);
+    let api_state = edge_hive_api::ApiState::new(cache, db, realtime, data_dir.clone());
     let api_router = edge_hive_api::create_router(api_state);
 
+    // MINIMAL TEST - Remove api_router temporarily to isolate issue
     let app = build_router()
-        .merge(api_router)
+        .fallback_service(spa_static_service())
         .layer(axum::Extension(state))
         .layer(axum::Extension(oauth_state));
 

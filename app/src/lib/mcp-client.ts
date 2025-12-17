@@ -1,5 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 
+// Check if running in Tauri environment
+const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const API_BASE_URL = 'http://localhost:8080/api/v1';
+
 export interface MCPRequest {
    jsonrpc: string;
    id?: number | string;
@@ -58,17 +62,58 @@ export class MCPClient {
          },
       };
 
-      const response = await invoke<MCPResponse>('mcp_handle_request', {
-         request,
-      });
+      if (isTauri) {
+         const response = await invoke<MCPResponse>('mcp_handle_request', {
+            request,
+         });
 
-      if (response.error) {
-         throw new Error(
-            `MCP Error ${response.error.code}: ${response.error.message}`
-         );
+         if (response.error) {
+            throw new Error(
+               `MCP Error ${response.error.code}: ${response.error.message}`
+            );
+         }
+         return response.result;
+      } else {
+         // Fallback to HTTP for browser dev
+         try {
+            const res = await fetch(`${API_BASE_URL}/mcp`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(request),
+            });
+
+            if (!res.ok) {
+               throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+            }
+
+            const response = await res.json() as MCPResponse;
+            if (response.error) {
+               throw new Error(
+                  `MCP Error ${response.error.code}: ${response.error.message}`
+               );
+            }
+            return response.result;
+         } catch (error) {
+            console.warn('MCP HTTP fallback failed:', error);
+            // Return mock data for UI development if backend is offline
+            if (toolName === 'admin_get_dashboard_stats') {
+               return {
+                  cpu_usage: 15.5,
+                  total_memory: 16 * 1024 * 1024 * 1024,
+                  used_memory: 8 * 1024 * 1024 * 1024,
+                  active_nodes: 3,
+                  total_tunnels: 1
+               };
+            }
+            if (toolName === 'admin_list_nodes') {
+               return [
+                  { id: 'n1', name: 'Edge-Node-01', status: 'active', cpu: 12, memory: 2.4 * 1024 * 1024 * 1024, ip: '192.168.1.10' },
+                  { id: 'n2', name: 'Edge-Node-02', status: 'idle', cpu: 5, memory: 1.1 * 1024 * 1024 * 1024, ip: '192.168.1.11' }
+               ];
+            }
+            throw error;
+         }
       }
-
-      return response.result;
    }
 
    /**
@@ -81,17 +126,27 @@ export class MCPClient {
          method: 'tools/list',
       };
 
-      const response = await invoke<MCPResponse>('mcp_handle_request', {
-         request,
-      });
+      if (isTauri) {
+         const response = await invoke<MCPResponse>('mcp_handle_request', {
+            request,
+         });
 
-      if (response.error) {
-         throw new Error(
-            `MCP Error ${response.error.code}: ${response.error.message}`
-         );
+         if (response.error) {
+            throw new Error(
+               `MCP Error ${response.error.code}: ${response.error.message}`
+            );
+         }
+         return response.result;
+      } else {
+         // Fallback to HTTP
+         const res = await fetch(`${API_BASE_URL}/mcp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+         });
+         const response = await res.json() as MCPResponse;
+         return response.result;
       }
-
-      return response.result;
    }
 
    /**
@@ -135,14 +190,22 @@ export class MCPClient {
     * Update stats in the MCP server (called from dashboard store)
     */
    async updateStats(stats: DashboardStats): Promise<void> {
-      await invoke('mcp_update_stats', { stats });
+      if (isTauri) {
+         await invoke('mcp_update_stats', { stats });
+      } else {
+         console.log('Mock updateStats:', stats);
+      }
    }
 
    /**
     * Update nodes in the MCP server (called from dashboard store)
     */
    async updateNodes(nodes: Node[]): Promise<void> {
-      await invoke('mcp_update_nodes', { nodes });
+      if (isTauri) {
+         await invoke('mcp_update_nodes', { nodes });
+      } else {
+         console.log('Mock updateNodes:', nodes);
+      }
    }
 }
 

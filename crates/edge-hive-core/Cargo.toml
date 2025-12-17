@@ -19,6 +19,9 @@ axum.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 
+# Static file content-types
+mime_guess = "2.0"
+
 # TLS/HTTPS
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 rustls = { version = "0.23", features = ["ring"] }

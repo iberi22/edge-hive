@@ -1,0 +1,481 @@
+warning: unused import: `DateTime`
+ --> crates\edge-hive-auth\src\jwt.rs:1:14
+  |
+1 | use chrono::{DateTime, Duration, Utc};
+  |              ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Deserialize` and `Serialize`
+ --> crates\edge-hive-auth\src\client.rs:1:13
+  |
+1 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^  ^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> crates\edge-hive-auth\src\middleware.rs:64:9
+   |
+64 |         mut request: Request,
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `validator` is never read
+  --> crates\edge-hive-auth\src\middleware.rs:51:5
+   |
+50 | pub struct AuthLayer {
+   |            --------- field in this struct
+51 |     validator: Arc<TokenValidator>,
+   |     ^^^^^^^^^
+   |
+   = note: `AuthLayer` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `scopes` is never read
+  --> crates\edge-hive-auth\src\middleware.rs:75:5
+   |
+74 | pub struct RequireScopes {
+   |            ------------- field in this struct
+75 |     scopes: Vec<String>,
+   |     ^^^^^^
+
+warning: `edge-hive-auth` (lib) generated 5 warnings (run `cargo fix --lib -p edge-hive-auth` to apply 3 suggestions)
+warning: unused import: `Deserialize`
+ --> crates\edge-hive-api\src\handlers\health.rs:4:13
+  |
+4 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Serialize`
+ --> crates\edge-hive-api\src\handlers\data.rs:8:26
+  |
+8 | use serde::{Deserialize, Serialize};
+  |                          ^^^^^^^^^
+
+warning: unused import: `Deserialize`
+ --> crates\edge-hive-api\src\handlers\edge.rs:8:13
+  |
+8 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^
+
+warning: unused variable: `payload`
+  --> crates\edge-hive-api\src\handlers\auth.rs:32:10
+   |
+32 |     Json(payload): Json<LoginRequest>,
+   |          ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_payload`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `payload`
+  --> crates\edge-hive-api\src\handlers\auth.rs:45:10
+   |
+45 |     Json(payload): Json<RefreshRequest>,
+   |          ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_payload`
+
+warning: struct `QueryParams` is never constructed
+  --> crates\edge-hive-api\src\handlers\data.rs:13:12
+   |
+13 | pub struct QueryParams {
+   |            ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `provider` and `code` are never read
+  --> crates\edge-hive-api\src\handlers\auth.rs:13:5
+   |
+12 | pub struct LoginRequest {
+   |            ------------ fields in this struct
+13 |     provider: String,
+   |     ^^^^^^^^
+14 |     code: String,
+   |     ^^^^
+
+warning: field `refresh_token` is never read
+  --> crates\edge-hive-api\src\handlers\auth.rs:26:5
+   |
+25 | pub struct RefreshRequest {
+   |            -------------- field in this struct
+26 |     refresh_token: String,
+   |     ^^^^^^^^^^^^^
+
+warning: function `cache_middleware` is never used
+  --> crates\edge-hive-api\src\middleware\cache.rs:15:14
+   |
+15 | pub async fn cache_middleware(
+   |              ^^^^^^^^^^^^^^^^
+
+warning: function `auth_middleware` is never used
+  --> crates\edge-hive-api\src\middleware\auth.rs:15:14
+   |
+15 | pub async fn auth_middleware(
+   |              ^^^^^^^^^^^^^^^
+
+warning: `edge-hive-api` (lib) generated 10 warnings (run `cargo fix --lib -p edge-hive-api` to apply 5 suggestions)
+warning: unused import: `zeroize::Zeroize`
+  --> crates\edge-hive-identity\src\lib.rs:12:5
+   |
+12 | use zeroize::Zeroize;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `edge-hive-identity` (lib) generated 1 warning (run `cargo fix --lib -p edge-hive-identity` to apply 1 suggestion)
+warning: unused import: `Path`
+ --> crates\edge-hive-tunnel\src\tor\mod.rs:8:17
+  |
+8 | use std::path::{Path, PathBuf};
+  |                 ^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `AsyncReadExt` and `AsyncWriteExt`
+  --> crates\edge-hive-tunnel\src\tor\mod.rs:10:17
+   |
+10 | use tokio::io::{AsyncReadExt, AsyncWriteExt};
+   |                 ^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `tokio::net::TcpListener`
+  --> crates\edge-hive-tunnel\src\tor\mod.rs:11:5
+   |
+11 | use tokio::net::TcpListener;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `error`
+  --> crates\edge-hive-tunnel\src\tor\mod.rs:12:27
+   |
+12 | use tracing::{info, warn, error};
+   |                           ^^^^^
+
+warning: variable does not need to be mutable
+   --> crates\edge-hive-tunnel\src\lib.rs:116:13
+    |
+116 |         let mut child = Command::new("cloudflared")
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `edge-hive-tunnel` (lib) generated 5 warnings (run `cargo fix --lib -p edge-hive-tunnel` to apply 5 suggestions)
+warning: unused imports: `IntoResponse` and `Response`
+ --> crates\edge-hive-core\src\server.rs:8:16
+  |
+8 |     response::{Response, IntoResponse, sse::{Event, Sse}},
+  |                ^^^^^^^^  ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `error`
+  --> crates\edge-hive-core\src\server.rs:13:21
+   |
+13 | use tracing::{info, error};
+   |                     ^^^^^
+
+warning: unused import: `self`
+  --> crates\edge-hive-core\src\server.rs:21:24
+   |
+21 | use futures::{stream::{self, Stream}, StreamExt};
+   |                        ^^^^
+
+warning: unused import: `response::IntoResponse`
+ --> crates\edge-hive-core\src\auth.rs:4:5
+  |
+4 |     response::IntoResponse,
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `PrivateKeyDer`
+ --> crates\edge-hive-core\src\tls.rs:5:56
+  |
+5 | use rustls::{ServerConfig, pki_types::{CertificateDer, PrivateKeyDer}};
+  |                                                        ^^^^^^^^^^^^^
+
+warning: unused import: `Swarm`
+  --> crates\edge-hive-core\src\commands\serve.rs:11:31
+   |
+11 |     swarm::{NetworkBehaviour, Swarm, SwarmEvent},
+   |                               ^^^^^
+
+warning: unused imports: `PeerId` and `Swarm`
+ --> crates\edge-hive-core\src\commands\peers.rs:8:31
+  |
+8 |     swarm::{NetworkBehaviour, Swarm, SwarmEvent},
+  |                               ^^^^^
+9 |     tcp, yamux, PeerId, SwarmBuilder,
+  |                 ^^^^^^
+
+warning: unused import: `tokio::sync::Mutex`
+ --> crates\edge-hive-core\src\commands\mcp.rs:9:5
+  |
+9 | use tokio::sync::Mutex;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> crates\edge-hive-core\src\commands\init.rs:39:9
+   |
+39 |     let mut identity = NodeIdentity::generate()?;
+   |         ----^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `NetworkBehaviour`
+  --> crates\edge-hive-core\src\commands\serve.rs:11:13
+   |
+11 |     swarm::{NetworkBehaviour, Swarm, SwarmEvent},
+   |             ^^^^^^^^^^^^^^^^
+
+warning: unused import: `NetworkBehaviour`
+ --> crates\edge-hive-core\src\commands\peers.rs:8:13
+  |
+8 |     swarm::{NetworkBehaviour, Swarm, SwarmEvent},
+  |             ^^^^^^^^^^^^^^^^
+
+warning: field `0` is never read
+  --> crates\edge-hive-core\src\commands\serve.rs:55:14
+   |
+55 |     Identify(identify::Event),
+   |     -------- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `BehaviourEvent` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+55 -     Identify(identify::Event),
+55 +     Identify(()),
+   |
+
+warning: field `0` is never read
+  --> crates\edge-hive-core\src\commands\serve.rs:56:10
+   |
+56 |     Mdns(mdns::Event),
+   |     ---- ^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `BehaviourEvent` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+56 -     Mdns(mdns::Event),
+56 +     Mdns(()),
+   |
+
+warning: field `0` is never read
+  --> crates\edge-hive-core\src\commands\serve.rs:57:9
+   |
+57 |     Kad(kad::Event),
+   |     --- ^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `BehaviourEvent` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+57 -     Kad(kad::Event),
+57 +     Kad(()),
+   |
+
+warning: field `0` is never read
+  --> crates\edge-hive-core\src\commands\peers.rs:40:14
+   |
+40 |     Identify(identify::Event),
+   |     -------- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `BehaviourEvent` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+40 -     Identify(identify::Event),
+40 +     Identify(()),
+   |
+
+warning: unused variable: `router`
+   --> crates\edge-hive-api\src\lib.rs:108:13
+    |
+108 |         let router = create_router(state);
+    |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_router`
+
+warning: `edge-hive-core` (lib) generated 15 warnings (run `cargo fix --lib -p edge-hive-core` to apply 9 suggestions)
+warning: `edge-hive-api` (lib test) generated 11 warnings (10 duplicates) (run `cargo fix --lib -p edge-hive-api --tests` to apply 1 suggestion)
+warning: unused import: `response::IntoResponse`
+ --> crates\edge-hive-core\src\auth.rs:4:5
+  |
+4 |     response::IntoResponse,
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `IntoResponse` and `Response`
+ --> crates\edge-hive-core\src\server.rs:8:16
+  |
+8 |     response::{Response, IntoResponse, sse::{Event, Sse}},
+  |                ^^^^^^^^  ^^^^^^^^^^^^
+
+warning: struct `Config` is never constructed
+ --> crates\edge-hive-core\src\config.rs:8:12
+  |
+8 | pub struct Config {
+  |            ^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `IdentityConfig` is never constructed
+  --> crates\edge-hive-core\src\config.rs:22:12
+   |
+22 | pub struct IdentityConfig {
+   |            ^^^^^^^^^^^^^^
+
+warning: struct `ServerConfig` is never constructed
+  --> crates\edge-hive-core\src\config.rs:30:12
+   |
+30 | pub struct ServerConfig {
+   |            ^^^^^^^^^^^^
+
+warning: struct `DiscoveryConfig` is never constructed
+  --> crates\edge-hive-core\src\config.rs:38:12
+   |
+38 | pub struct DiscoveryConfig {
+   |            ^^^^^^^^^^^^^^^
+
+warning: struct `TunnelConfig` is never constructed
+  --> crates\edge-hive-core\src\config.rs:48:12
+   |
+48 | pub struct TunnelConfig {
+   |            ^^^^^^^^^^^^
+
+warning: struct `DatabaseConfig` is never constructed
+  --> crates\edge-hive-core\src\config.rs:58:12
+   |
+58 | pub struct DatabaseConfig {
+   |            ^^^^^^^^^^^^^^
+
+warning: associated function `load` is never used
+  --> crates\edge-hive-core\src\config.rs:99:12
+   |
+97 | impl Config {
+   | ----------- associated function in this implementation
+98 |     /// Load configuration from file
+99 |     pub fn load(path: &str) -> anyhow::Result<Self> {
+   |            ^^^^
+
+warning: method `build_server_config` is never used
+  --> crates\edge-hive-core\src\tls.rs:62:12
+   |
+18 | impl TlsCertificate {
+   | ------------------- method in this implementation
+...
+62 |     pub fn build_server_config(&self) -> Result<Arc<ServerConfig>> {
+   |            ^^^^^^^^^^^^^^^^^^^
+
+warning: field `0` is never read
+  --> crates\edge-hive-core\src\commands\serve.rs:55:14
+   |
+55 |     Identify(identify::Event),
+   |     -------- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `BehaviourEvent` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+55 -     Identify(identify::Event),
+55 +     Identify(()),
+   |
+
+warning: `edge-hive-core` (bin "edge-hive-core") generated 23 warnings (12 duplicates) (run `cargo fix --bin "edge-hive-core" -p edge-hive-core` to apply 2 suggestions)
+   Compiling edge-hive-core v0.1.0 (E:\scripts-python\termux-private-edge-server\crates\edge-hive-core)
+warning: `edge-hive-core` (bin "edge-hive-core" test) generated 22 warnings (22 duplicates)
+warning: `edge-hive-core` (lib test) generated 15 warnings (15 duplicates)
+warning: use of deprecated associated function `assert_cmd::Command::cargo_bin`: incompatible with a custom cargo build-dir, see instead `cargo::cargo_bin_cmd!`
+  --> crates\edge-hive-core\tests\cli.rs:13:28
+   |
+13 |     let mut cmd = Command::cargo_bin("edge-hive")?;
+   |                            ^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated associated function `assert_cmd::Command::cargo_bin`: incompatible with a custom cargo build-dir, see instead `cargo::cargo_bin_cmd!`
+  --> crates\edge-hive-core\tests\cli.rs:30:28
+   |
+30 |     let mut cmd = Command::cargo_bin("edge-hive")?;
+   |                            ^^^^^^^^^
+
+warning: use of deprecated associated function `assert_cmd::Command::cargo_bin`: incompatible with a custom cargo build-dir, see instead `cargo::cargo_bin_cmd!`
+  --> crates\edge-hive-core\tests\cli.rs:46:33
+   |
+46 |     let mut init_cmd = Command::cargo_bin("edge-hive")?;
+   |                                 ^^^^^^^^^
+
+warning: use of deprecated associated function `assert_cmd::Command::cargo_bin`: incompatible with a custom cargo build-dir, see instead `cargo::cargo_bin_cmd!`
+  --> crates\edge-hive-core\tests\cli.rs:52:28
+   |
+52 |     let mut cmd = Command::cargo_bin("edge-hive")?;
+   |                            ^^^^^^^^^
+
+warning: use of deprecated associated function `assert_cmd::Command::cargo_bin`: incompatible with a custom cargo build-dir, see instead `cargo::cargo_bin_cmd!`
+  --> crates\edge-hive-core\tests\cli.rs:65:28
+   |
+65 |     let mut cmd = Command::cargo_bin("edge-hive")?;
+   |                            ^^^^^^^^^
+
+warning: `edge-hive-core` (test "cli") generated 5 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.56s
+     Running unittests src\lib.rs (target\debug\deps\edge_hive_api-1feff199926a8fb2.exe)
+
+running 2 tests
+test handlers::health::tests::test_health_check ... ok
+test tests::test_router_creation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s
+
+     Running unittests src\lib.rs (target\debug\deps\edge_hive_core-e70f08b37e154eca.exe)
+
+running 1 test
+test tls::tests::test_generate_self_signed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (target\debug\deps\edge_hive_core-669fb9739fbd7746.exe)
+
+running 1 test
+test tls::tests::test_generate_self_signed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\cli.rs (target\debug\deps\cli-7cff904e020ee4a1.exe)
+
+running 4 tests
+test test_serve_command_help ... ok
+test test_status_command_no_init ... ok
+test test_init_command ... ok
+test test_peers_command ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.07s
+
+     Running tests\server.rs (target\debug\deps\server-c39229232200f974.exe)
+
+running 2 tests
+test test_node_info ... ok
+test test_health_check ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests edge_hive_api
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests edge_hive_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

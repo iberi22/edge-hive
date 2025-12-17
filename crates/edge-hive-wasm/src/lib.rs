@@ -2,6 +2,11 @@
 //!
 //! Provides sandboxed execution of WASM plugins using Wasmtime.
 
+pub mod runtime;
+pub mod prelude;
+
+pub use runtime::WasmRuntime;
+
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use thiserror::Error;

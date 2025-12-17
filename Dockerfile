@@ -1,5 +1,20 @@
-# Multi-stage build for minimal Docker image
-FROM rust:1.90-alpine AS builder
+# Multi-stage build for Edge Hive with Astro frontend
+
+# Stage 1: Build Astro frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY app/package*.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY app/ ./
+RUN npm run build
+
+# Stage 2: Build Rust backend
+FROM rust:1.90-alpine AS backend-builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -10,34 +25,53 @@ RUN apk add --no-cache \
 
 WORKDIR /build
 
-# Copy workspace files
+# Copy workspace files (excluding Tauri app)
 COPY Cargo.toml Cargo.lock ./
+
+# Create placeholder for Tauri crate to satisfy workspace resolver
+RUN mkdir -p app/src-tauri/src && \
+    cat > app/src-tauri/Cargo.toml <<'EOF'
+[package]
+name = "edge-hive-tauri"
+version = "0.1.0"
+edition = "2021"
+EOF
+
+RUN echo 'fn main() {}' > app/src-tauri/src/main.rs
+
+# Copy actual source code
 COPY src ./src
 COPY crates ./crates
-COPY app/src-tauri ./app/src-tauri
 
-# Build release binary (static linking for musl)
+# Build release binary (static linking for musl) - only edge-hive binary, not tauri
 RUN cargo build --release --package edge-hive --bin edge-hive --target x86_64-unknown-linux-musl
 
-# Final stage: minimal Alpine image
+# Stage 3: Runtime image
 FROM alpine:3.19
 
-# Install runtime dependencies (only CA certs for HTTPS)
+# Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
     libgcc \
-    wget
+    wget \
+    curl
 
 # Create non-root user
 RUN addgroup -g 1000 edgehive && \
     adduser -D -u 1000 -G edgehive edgehive
 
-# Copy binary from builder
-COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/edge-hive /usr/local/bin/edge-hive
+WORKDIR /app
+
+# Copy backend binary from builder
+COPY --from=backend-builder /build/target/x86_64-unknown-linux-musl/release/edge-hive /usr/local/bin/edge-hive
+
+# Copy frontend build from frontend-builder
+COPY --from=frontend-builder /app/frontend/dist ./app/dist
 
 # Set ownership and permissions
 RUN chown edgehive:edgehive /usr/local/bin/edge-hive && \
-    chmod +x /usr/local/bin/edge-hive
+    chmod +x /usr/local/bin/edge-hive && \
+    chown -R edgehive:edgehive /app
 
 # Create data directory for persistent storage
 RUN mkdir -p /data/.edge-hive && \
@@ -45,7 +79,7 @@ RUN mkdir -p /data/.edge-hive && \
 
 # Switch to non-root user
 USER edgehive
-WORKDIR /data
+WORKDIR /app
 
 # Expose ports
 # 8080: HTTP/HTTPS API (MCP server)

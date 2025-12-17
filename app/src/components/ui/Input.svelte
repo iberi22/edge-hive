@@ -10,8 +10,8 @@
   $: inputClasses = `
     w-full bg-surface/50 border rounded-lg px-4 py-2 text-textHeading placeholder-muted
     focus:outline-none focus:ring-1 transition-all font-sans
-    ${error 
-      ? 'border-danger focus:border-danger focus:ring-danger' 
+    ${error
+      ? 'border-danger focus:border-danger focus:ring-danger'
       : 'border-glass-border focus:border-primary focus:ring-primary'}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     ${$$props.class || ''}
@@ -24,7 +24,7 @@
       {label}
     </label>
   {/if}
-  
+
   <div class="relative">
     <input
       {id}

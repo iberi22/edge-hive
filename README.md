@@ -1,6 +1,6 @@
 # 🐝 Edge Hive
 
-> **Run Your Server Anywhere: Android, PC, Docker, VPS**  
+> **Run Your Server Anywhere: Android, PC, Docker, VPS**
 > **Sovereign Computing with Tor + P2P Networking**
 
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)

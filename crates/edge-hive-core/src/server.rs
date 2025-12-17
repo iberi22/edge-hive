@@ -491,6 +491,14 @@ pub async fn run(
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
 
+    // Friendly display host: use localhost when bound to 0.0.0.0 or :: to make URLs easy to open in a browser
+    let display_host = if addr.ip().is_unspecified() {
+        "localhost".to_string()
+    } else {
+        addr.ip().to_string()
+    };
+    let display_addr = format!("{}:{}", display_host, addr.port());
+
     if enable_https {
         // HTTPS mode with TLS
         use crate::tls::TlsCertificate;
@@ -508,8 +516,8 @@ pub async fn run(
             &tls_cert.key_path,
         ).await?;
 
-        info!("🔒 HTTPS server listening on https://{}", addr);
-        info!("🔐 OAuth2 token endpoint: https://{}/mcp/auth/token", addr);
+        info!("🔒 HTTPS server listening on https://{} (bound to {})", display_addr, addr);
+        info!("🔐 OAuth2 token endpoint: https://{}/mcp/auth/token", display_addr);
         info!("⚠️  Using self-signed certificate (for testing only)");
 
         axum_server::bind_rustls(addr, tls_config)
@@ -517,8 +525,8 @@ pub async fn run(
             .await?;
     } else {
         // HTTP mode (default)
-        info!("🌐 HTTP server listening on http://{}", addr);
-        info!("🔐 OAuth2 token endpoint: http://{}/mcp/auth/token", addr);
+        info!("🌐 HTTP server listening on http://{} (bound to {})", display_addr, addr);
+        info!("🔐 OAuth2 token endpoint: http://{}/mcp/auth/token", display_addr);
         info!("💡 Tip: Use --https for HTTPS/TLS support");
 
         let listener = tokio::net::TcpListener::bind(addr).await?;

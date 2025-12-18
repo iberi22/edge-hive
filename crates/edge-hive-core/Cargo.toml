@@ -61,6 +61,7 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
 edge-hive-api = { path = "../edge-hive-api" }
 edge-hive-auth = { path = "../edge-hive-auth", features = ["server"] }
+edge-hive-cloud = { path = "../edge-hive-cloud" }
 
 # P2P Networking
 libp2p.workspace = true

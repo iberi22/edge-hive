@@ -37,6 +37,10 @@ use billing_commands::BillingState;
 use tunnel_commands::TunnelState;
 use cache_commands::CacheState;
 
+pub struct ServerState {
+    pub pid: Mutex<Option<u32>>,
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize Static States
@@ -55,12 +59,16 @@ pub fn run() {
         manager: Arc::new(Mutex::new(PluginManager::new())),
     };
 
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(mcp_state)
         .manage(terminal_state)
         .manage(log_state)
         .manage(function_state)
+        .manage(ServerState {
+            pid: Mutex::new(None),
+        })
         .manage(DatabaseState::new())
         .manage(AuthState::new())
         .manage(BillingState::new())

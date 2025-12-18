@@ -1,9 +1,11 @@
 //! Tauri IPC Commands
 
 use crate::types::{CloudNode, NodeStatus, PeerInfo};
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use crate::ServerState;
+use sysinfo::{CpuRefreshKind, Pid, RefreshKind, System};
 use serde::{Serialize, Deserialize};
-use tauri::State;
+use tauri::{State, Manager};
+use tauri_plugin_shell::ShellExt;
 use crate::db_commands::DatabaseState;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,12 +48,28 @@ pub async fn get_system_stats() -> Result<SystemStats, String> {
 
 /// Get the current node status
 #[tauri::command]
-pub async fn get_node_status() -> Result<NodeStatus, String> {
-    // TODO: Get actual status from edge-hive service
+pub async fn get_node_status(state: tauri::State<'_, ServerState>) -> Result<NodeStatus, String> {
+    let pid_lock = state.pid.lock().unwrap();
+    if let Some(pid_val) = *pid_lock {
+        let s = System::new_with_specifics(
+            RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()),
+        );
+        if let Some(process) = s.process(Pid::from(pid_val as usize)) {
+            return Ok(NodeStatus {
+                name: process.name().to_string(),
+                peer_id: format!("PID: {}", pid_val),
+                status: "running".to_string(),
+                peers_count: 0, // Placeholder
+                uptime_seconds: process.run_time(),
+                tunnel_url: None, // Placeholder
+            });
+        }
+    }
+
     Ok(NodeStatus {
-        name: "edge-node-demo".into(),
-        peer_id: "12D3KooWDemo...".into(),
-        status: "running".into(),
+        name: "edge-node".into(),
+        peer_id: "N/A".into(),
+        status: "stopped".into(),
         peers_count: 0,
         uptime_seconds: 0,
         tunnel_url: None,
@@ -73,15 +91,52 @@ pub async fn get_peers(state: State<'_, DatabaseState>) -> Result<Vec<PeerInfo>,
 
 /// Start the server
 #[tauri::command]
-pub async fn start_server(port: u16) -> Result<String, String> {
-    // TODO: Start edge-hive server
-    Ok(format!("Server started on port {}", port))
+pub async fn start_server(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, ServerState>,
+    port: u16,
+) -> Result<String, String> {
+    let sidecar = app
+        .shell()
+        .sidecar("edge-hive-core")
+        .map_err(|e| e.to-string())?;
+    let (mut rx, child) = sidecar
+        .args(["--port", &port.to_string()])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    let pid = child.pid();
+    *state.pid.lock().unwrap() = Some(pid);
+    // Optional: Log output from sidecar
+    tokio::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            match event {
+                tauri_plugin_shell::Event::Stdout(line) => {
+                    println!("[sidecar] {}", line);
+                }
+                tauri_plugin_shell::Event::Stderr(line) => {
+                    eprintln!("[sidecar] {}", line);
+                }
+                _ => {}
+            }
+        }
+    });
+    Ok(format!("Server started with PID {}", pid))
 }
 
 /// Stop the server
 #[tauri::command]
-pub async fn stop_server() -> Result<(), String> {
-    // TODO: Stop edge-hive server
+pub async fn stop_server(state: tauri::State<'_, ServerState>) -> Result<(), String> {
+    let mut pid_lock = state.pid.lock().unwrap();
+    if let Some(pid_val) = *pid_lock {
+        let s =
+            System::new_with_specifics(RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()));
+        if let Some(process) = s.process(Pid::from(pid_val as usize)) {
+            if !process.kill() {
+                return Err(format!("Failed to kill process with PID {}", pid_val));
+            }
+        }
+        *pid_lock = None;
+    }
     Ok(())
 }
 

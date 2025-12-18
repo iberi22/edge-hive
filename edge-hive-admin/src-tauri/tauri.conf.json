@@ -34,5 +34,26 @@
          "csp": null
       }
    },
-   "plugins": {}
+   "plugins": {},
+   "systemTray": {
+     "iconPath": "icons/icon.png",
+     "iconAsTemplate": true
+   },
+   "tray": {
+     "menu": [
+       {
+         "id": "quit",
+         "text": "Quit",
+         "accelerator": "CmdOrCtrl+Q"
+       }
+     ]
+   },
+   "sidecar": {
+     "scripts": [
+       {
+         "name": "edge-hive-core",
+         "path": "../../target/release/edge-hive-core"
+       }
+     ]
+   }
 }

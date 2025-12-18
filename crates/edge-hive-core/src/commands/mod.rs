@@ -8,3 +8,4 @@ pub mod tunnel;
 pub mod plugin;
 pub mod mcp;
 pub mod auth;
+pub mod cloud;

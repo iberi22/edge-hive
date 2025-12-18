@@ -439,6 +439,7 @@ pub fn build_router() -> Router {
 
     // Main API routes
     Router::new()
+        .route("/ping", get(|| async { "pong" }))
         .route("/health", get(health))
         .route("/api/v1/node", get(node_info))
         .route("/api/v1/peers", get(get_peers))

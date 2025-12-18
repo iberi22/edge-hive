@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
-mod commands;
+pub mod commands;
 mod mcp_commands;
 mod terminal_commands;
 
@@ -46,6 +46,11 @@ pub struct CloudNode {
     pub monthly_cost: u32,
 }
 
+/// State for the Edge Hive server process
+pub struct ServerState {
+    pub pid: Arc<Mutex<Option<u32>>>,
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize MCP Server
@@ -59,10 +64,16 @@ pub fn run() {
         writer: Arc::new(Mutex::new(None)),
     };
 
+    // Initialize Server State
+    let server_state = ServerState {
+        pid: Arc::new(Mutex::new(None)),
+    };
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(mcp_state)
         .manage(terminal_state)
+        .manage(server_state)
         .invoke_handler(tauri::generate_handler![
             commands::get_node_status,
             commands::get_peers,

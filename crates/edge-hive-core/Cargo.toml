@@ -64,6 +64,7 @@ edge-hive-auth = { path = "../edge-hive-auth", features = ["server"] }
 
 # P2P Networking
 libp2p.workspace = true
+reqwest = { version = "0.12", features = ["json"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

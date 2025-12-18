@@ -10,7 +10,7 @@ fn test_init_command() -> TestResult {
     let temp_dir = tempdir()?;
     let data_dir = temp_dir.path();
 
-    let mut cmd = Command::cargo_bin("edge-hive")?;
+    let mut cmd = Command::cargo_bin("edge-hive-core")?;
     cmd.arg("init")
         .env("EDGE_HIVE_DATA_DIR", data_dir)
         .assert()
@@ -27,7 +27,7 @@ fn test_status_command_no_init() -> TestResult {
     let temp_dir = tempdir()?;
     let data_dir = temp_dir.path();
 
-    let mut cmd = Command::cargo_bin("edge-hive")?;
+    let mut cmd = Command::cargo_bin("edge-hive-core")?;
     cmd.arg("status")
         .env("EDGE_HIVE_DATA_DIR", data_dir)
         .assert()
@@ -43,13 +43,13 @@ fn test_peers_command() -> TestResult {
     let data_dir = temp_dir.path();
 
     // Init first
-    let mut init_cmd = Command::cargo_bin("edge-hive")?;
+    let mut init_cmd = Command::cargo_bin("edge-hive-core")?;
     init_cmd.arg("init")
         .env("EDGE_HIVE_DATA_DIR", data_dir)
         .assert()
         .success();
 
-    let mut cmd = Command::cargo_bin("edge-hive")?;
+    let mut cmd = Command::cargo_bin("edge-hive-core")?;
     cmd.arg("peers")
         .arg("list")
         .env("EDGE_HIVE_DATA_DIR", data_dir)
@@ -62,7 +62,7 @@ fn test_peers_command() -> TestResult {
 
 #[test]
 fn test_serve_command_help() -> TestResult {
-    let mut cmd = Command::cargo_bin("edge-hive")?;
+    let mut cmd = Command::cargo_bin("edge-hive-core")?;
     cmd.arg("serve")
         .arg("--help")
         .assert()

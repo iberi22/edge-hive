@@ -1,0 +1,12 @@
+{
+   "servers": {
+      "edge-hive": {
+         "command": "${workspaceFolder}/target/debug/edge-hive.exe",
+         "args": [
+            "--config-dir",
+            "${workspaceFolder}/.edge-hive",
+            "mcp"
+         ]
+      }
+   }
+}

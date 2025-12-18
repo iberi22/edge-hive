@@ -5,12 +5,14 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::info;
+use aws_sdk_ec2::{Client as Ec2Client, model::{InstanceType, Tag, TagSpecification, ResourceType}};
+use aws_config::{meta::region::RegionProviderChain, BehaviorVersion};
 
 /// Errors that can occur during cloud operations
 #[derive(Debug, Error)]
 pub enum CloudError {
     #[error("AWS API error: {0}")]
-    AwsApi(String),
+    AwsApi(#[from] aws_sdk_ec2::Error),
 
     #[error("Instance not found: {0}")]
     InstanceNotFound(String),
@@ -23,7 +25,7 @@ pub enum CloudError {
 }
 
 /// Supported AWS regions
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
 pub enum Region {
     #[serde(rename = "us-east-1")]
     UsEast1,
@@ -47,7 +49,7 @@ impl Region {
 }
 
 /// Instance size options
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
 pub enum InstanceSize {
     /// t4g.small - 2 vCPU, 2 GB RAM (~$12/mo)
     Small,
@@ -58,11 +60,11 @@ pub enum InstanceSize {
 }
 
 impl InstanceSize {
-    pub fn instance_type(&self) -> &'static str {
+    pub fn instance_type(&self) -> InstanceType {
         match self {
-            InstanceSize::Small => "t4g.small",
-            InstanceSize::Medium => "t4g.medium",
-            InstanceSize::Large => "t4g.large",
+            InstanceSize::Small => InstanceType::T4gSmall,
+            InstanceSize::Medium => InstanceType::T4gMedium,
+            InstanceSize::Large => InstanceType::T4gLarge,
         }
     }
 
@@ -118,17 +120,17 @@ pub enum NodeStatus {
 
 /// AWS Provisioner service
 pub struct AWSProvisioner {
-    // ec2_client: aws_sdk_ec2::Client,
-    // route53_client: aws_sdk_route53::Client,
+    ec2_client: Ec2Client,
 }
 
 impl AWSProvisioner {
     /// Create a new AWS provisioner
-    pub async fn new() -> Result<Self, CloudError> {
+    pub async fn new(region: Region) -> Result<Self, CloudError> {
         info!("☁️ AWS Provisioner initialized");
-        // TODO: Initialize AWS SDK clients
-        // let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        Ok(Self {})
+        let region_provider = RegionProviderChain::first_try(region.as_str());
+        let config = aws_config::defaults(BehaviorVersion::latest()).region(region_provider).load().await;
+        let ec2_client = Ec2Client::new(&config);
+        Ok(Self { ec2_client })
     }
 
     /// Provision a new Edge Hive node
@@ -136,16 +138,34 @@ impl AWSProvisioner {
         info!("🚀 Provisioning node '{}' for user {} in {}",
             config.node_name, config.user_id, config.region.as_str());
 
-        // TODO: Implement actual EC2 provisioning
-        // 1. Create security group
-        // 2. Launch EC2 instance with user-data script
-        // 3. Wait for instance to be running
-        // 4. Get public IP
-        // 5. Configure Cloudflare Tunnel
-        // 6. Add DNS record
+        let user_data = generate_user_data("placeholder-token", config.cf_tunnel_token.as_deref());
+        let encoded_user_data = base64::encode(user_data);
+
+        let run_instances_output = self.ec2_client.run_instances()
+            .image_id("ami-0c55b159cbfafe1f0") // Amazon Linux 2 AMI
+            .instance_type(config.size.instance_type())
+            .min_count(1)
+            .max_count(1)
+            .user_data(&encoded_user_data)
+            .tag_specifications(
+                TagSpecification::builder()
+                    .resource_type(ResourceType::Instance)
+                    .tags(
+                        Tag::builder()
+                            .key("Name")
+                            .value(&config.node_name)
+                            .build()
+                    )
+                    .build()
+            )
+            .send()
+            .await
+            .map_err(|e| CloudError::ProvisioningFailed(e.to_string()))?;
+
+        let instance = run_instances_output.instances().unwrap().get(0).unwrap();
+        let instance_id = instance.instance_id().unwrap().to_string();
 
         let node_id = generate_node_id();
-        let instance_id = format!("i-{}", generate_node_id());
 
         Ok(CloudNode {
             id: node_id.clone(),
@@ -154,61 +174,13 @@ impl AWSProvisioner {
             instance_id,
             region: config.region,
             size: config.size,
-            public_ip: Some("52.1.2.3".into()), // Placeholder
+            public_ip: instance.public_ip_address().map(|s| s.to_string()),
             tunnel_url: Some(format!("https://{}.edge-hive.io", node_id)),
-            peer_id: Some(format!("12D3KooW{}", &node_id[..12])),
+            peer_id: None,
             status: NodeStatus::Provisioning,
             created_at: chrono::Utc::now(),
             storage_gb: config.storage_gb,
         })
-    }
-
-    /// Get node status
-    pub async fn get_node(&self, instance_id: &str) -> Result<CloudNode, CloudError> {
-        info!("Getting node status for {}", instance_id);
-
-        // TODO: Query EC2 for instance status
-        Err(CloudError::InstanceNotFound(instance_id.to_string()))
-    }
-
-    /// List all nodes for a user
-    pub async fn list_nodes(&self, user_id: &str) -> Result<Vec<CloudNode>, CloudError> {
-        info!("Listing nodes for user {}", user_id);
-
-        // TODO: Query database for user's nodes
-        Ok(vec![])
-    }
-
-    /// Stop a node (can be restarted)
-    pub async fn stop_node(&self, instance_id: &str) -> Result<(), CloudError> {
-        info!("Stopping node {}", instance_id);
-
-        // TODO: Call EC2 StopInstances
-        Ok(())
-    }
-
-    /// Start a stopped node
-    pub async fn start_node(&self, instance_id: &str) -> Result<(), CloudError> {
-        info!("Starting node {}", instance_id);
-
-        // TODO: Call EC2 StartInstances
-        Ok(())
-    }
-
-    /// Terminate a node (permanent)
-    pub async fn terminate_node(&self, instance_id: &str) -> Result<(), CloudError> {
-        info!("⚠️ Terminating node {}", instance_id);
-
-        // TODO: Call EC2 TerminateInstances
-        Ok(())
-    }
-
-    /// Restart a node
-    pub async fn restart_node(&self, instance_id: &str) -> Result<(), CloudError> {
-        info!("Restarting node {}", instance_id);
-
-        // TODO: Call EC2 RebootInstances
-        Ok(())
     }
 }
 
@@ -273,8 +245,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_provisioner_creation() {
-        let provisioner = AWSProvisioner::new().await;
-        assert!(provisioner.is_ok());
+    #[ignore]
+    async fn test_provision_node_aws() {
+        let config = ProvisionConfig {
+            user_id: "test-user".to_string(),
+            node_name: "edge-hive-test-node".to_string(),
+            region: Region::UsEast1,
+            size: InstanceSize::Small,
+            storage_gb: 20,
+            cf_tunnel_token: None,
+        };
+
+        let provisioner = AWSProvisioner::new(config.region).await.unwrap();
+        let result = provisioner.provision_node(config).await;
+
+        assert!(result.is_ok());
+
+        let node = result.unwrap();
+        assert_eq!(node.name, "edge-hive-test-node");
+        assert!(node.instance_id.starts_with("i-"));
     }
 }

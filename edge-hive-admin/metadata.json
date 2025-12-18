@@ -1,0 +1,5 @@
+{
+  "name": "Edge Hive Admin",
+  "description": "A cyberpunk industrial admin dashboard for the Edge Hive BaaS ecosystem, featuring real-time system metrics, SQL data exploration, and serverless function logs.",
+  "requestFramePermissions": []
+}

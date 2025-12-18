@@ -17,6 +17,7 @@ pub mod commands {
     pub mod plugin;
     pub mod mcp; // Added MCP module
     pub mod auth; // OAuth2 client management
+    pub mod cloud;
 }
 
 #[derive(Parser, Debug)]
@@ -62,6 +63,9 @@ enum Commands {
 
     /// Ping the server to check if it's running
     Ping(commands::ping::PingArgs),
+
+    /// Manage cloud nodes
+    Cloud(commands::cloud::CloudArgs),
 }
 
 #[tokio::main]
@@ -102,6 +106,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Mcp(a) => commands::mcp::run(a).await?, // Run MCP
         Commands::Auth(a) => commands::auth::run(a, &data_dir).await?, // OAuth2 management
         Commands::Ping(a) => commands::ping::run(a).await?,
+        Commands::Cloud(a) => commands::cloud::handle_cloud_command(a).await?,
     }
 
     Ok(())

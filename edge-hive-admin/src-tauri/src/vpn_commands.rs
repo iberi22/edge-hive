@@ -1,45 +1,86 @@
-use tauri::State;
-use serde::{Serialize, Deserialize};
+use std::process::Command;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VPNPeer {
-    pub id: String,
+pub struct VpnPeer {
     pub public_key: String,
-    pub endpoint: String,
+    pub endpoint: Option<String>,
     pub allowed_ips: Vec<String>,
-    pub last_handshake: String,
-    pub transfer_rx: String,
-    pub transfer_tx: String,
-    pub status: String,
+    pub latest_handshake: Option<String>,
+    pub transfer_rx: u64,
+    pub transfer_tx: u64,
 }
 
+/// Parse output from `wg show all dump`
 #[tauri::command]
-pub async fn get_vpn_peers() -> Result<Vec<VPNPeer>, String> {
-    Ok(vec![
-        VPNPeer {
-            id: "HN-01-MASTER".into(),
-            public_key: "x62k...92j".into(),
-            endpoint: "AWS_HUB:51820".into(),
-            allowed_ips: vec!["10.0.0.1/32".into()],
-            last_handshake: "12s ago".into(),
-            transfer_rx: "1.2 GB".into(),
-            transfer_tx: "4.5 GB".into(),
-            status: "connected".into()
-        },
-        VPNPeer {
-            id: "LAPTOP-ADMIN".into(),
-            public_key: "z12a...02m".into(),
-            endpoint: "dynamic_ip:3921".into(),
-            allowed_ips: vec!["10.0.0.5/32".into()],
-            last_handshake: "2m ago".into(),
-            transfer_rx: "12 MB".into(),
-            transfer_tx: "82 MB".into(),
-            status: "idle".into()
-        },
-    ])
+pub async fn get_vpn_peers() -> Result<Vec<VpnPeer>, String> {
+    let output = Command::new("wg")
+        .args(["show", "all", "dump"])
+        .output()
+        .map_err(|e| format!("Failed to run wg: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut peers = Vec::new();
+
+    for line in stdout.lines().skip(1) { // Skip interface line
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() >= 8 {
+            peers.push(VpnPeer {
+                public_key: parts[1].to_string(),
+                endpoint: if parts[3] != "(none)" { Some(parts[3].to_string()) } else { None },
+                allowed_ips: parts[4].split(',').map(|s| s.to_string()).collect(),
+                latest_handshake: Some(parts[5].to_string()),
+                transfer_rx: parts[6].parse().unwrap_or(0),
+                transfer_tx: parts[7].parse().unwrap_or(0),
+            });
+        }
+    }
+
+    Ok(peers)
 }
 
+/// Generate WireGuard keypair
 #[tauri::command]
-pub async fn generate_vpn_config() -> Result<String, String> {
-    Ok("[Interface]\nPrivateKey = ...\nAddress = 10.0.0.99/32\nDNS = 1.1.1.1".to_string())
+pub async fn generate_vpn_keypair() -> Result<(String, String), String> {
+    let privkey = Command::new("wg")
+        .arg("genkey")
+        .output()
+        .map_err(|e| format!("Failed to generate key: {}", e))?;
+
+    let private_key = String::from_utf8_lossy(&privkey.stdout).trim().to_string();
+
+    let pubkey = Command::new("wg")
+        .arg("pubkey")
+        .stdin(std::process::Stdio::piped())
+        .output()
+        .map_err(|e| format!("Failed to derive pubkey: {}", e))?;
+
+    let public_key = String::from_utf8_lossy(&pubkey.stdout).trim().to_string();
+
+    Ok((private_key, public_key))
+}
+
+/// Generate WireGuard config file content
+#[tauri::command]
+pub async fn generate_vpn_config(
+    peer_name: String,
+    peer_public_key: String,
+    peer_endpoint: String,
+    allowed_ips: String,
+) -> Result<String, String> {
+    let (private_key, public_key) = generate_vpn_keypair().await?;
+
+    let config = format!(r#"[Interface]
+PrivateKey = {}
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = {}
+Endpoint = {}
+AllowedIPs = {}
+PersistentKeepalive = 25
+"#, private_key, peer_public_key, peer_endpoint, allowed_ips);
+
+    Ok(config)
 }

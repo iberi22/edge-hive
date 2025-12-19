@@ -1,28 +1,18 @@
 use edge_hive_db::DatabaseService;
 use serde_json::Value;
-use std::sync::Arc;
+use std::path::Path;
 use tauri::State;
 
 pub struct DatabaseState {
-    // Stub service
-    pub service: DatabaseServiceStub,
-}
-
-pub struct DatabaseServiceStub;
-
-impl DatabaseServiceStub {
-    pub async fn query(&self, _query: &str) -> Result<Vec<()>, String> {
-        Ok(vec![])
-    }
-    // Assuming query_json is also needed for the stub to compile with db_query
-    pub async fn query_json(&self, _query: &str) -> Result<Vec<Value>, String> {
-        Ok(vec![])
-    }
+    pub service: DatabaseService,
 }
 
 impl DatabaseState {
-    pub fn new() -> Self {
-        Self { service: DatabaseServiceStub }
+    pub async fn new(db_path: &Path) -> Result<Self, String> {
+        let service = DatabaseService::new(db_path)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(Self { service })
     }
 }
 

@@ -1,7 +1,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment } from '../types';
+import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment, Task } from '../types';
 
 export const tauriApi = {
    // Metrics & Logs
@@ -284,7 +284,12 @@ export const tauriApi = {
    getBackups: async () => [],
    getTopPaths: async () => [],
    getAccessLogs: async () => [],
-   getTasks: async () => [],
+   getTasks: async () => invoke<Task[]>('get_tasks'),
+  createTask: async (title: string, description?: string, priority?: string, dueDate?: string) =>
+    invoke<Task>('create_task', { title, description, priority, dueDate }),
+  updateTask: async (taskId: string, status?: string, title?: string, priority?: string) =>
+    invoke('update_task', { taskId, status, title, priority }),
+  deleteTask: async (taskId: string) => invoke('delete_task', { taskId }),
    invokeFunction: async (fnId: string, payload: any) => {
       try {
          const result = await invoke<any>('invoke_function', { id: fnId, payload });

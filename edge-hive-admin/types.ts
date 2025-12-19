@@ -6,6 +6,17 @@ export interface SystemMetric {
   latency: number;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface LogEntry {
   id: string;
   timestamp: string;

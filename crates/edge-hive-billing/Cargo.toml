@@ -19,9 +19,9 @@ tracing.workspace = true
 # JWT for user tokens
 jsonwebtoken = "9"
 chrono = { version = "0.4", features = ["serde"] }
-stripe-rust = { version = "0.12.3", features = ["webhook-events"] }
+stripe-rust = { version = "0.26.0", features = ["webhook-events"] }
 stripe = "0.0.5"
 
 [dev-dependencies]
 tokio-test = "0.4"
-stripe-rust = { git = "https://github.com/stripe/stripe-rust", rev = "b374187" }
+stripe-rust = { version = "0.26.0", features = ["webhook-events"] }

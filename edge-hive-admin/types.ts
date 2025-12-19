@@ -102,6 +102,23 @@ export interface EdgeFunction {
   env_vars: any;
 }
 
+export interface FunctionInfo {
+    id: string;
+    name: string;
+    runtime: string;
+    memory_mb: number;
+    timeout_seconds: number;
+    invocations: number;
+    status: string;
+}
+
+export interface FunctionVersion {
+    version: number;
+    created_at: string;
+    size_bytes: number;
+    active: boolean;
+}
+
 export interface User {
   id: string;
   email: string;

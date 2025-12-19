@@ -1,9 +1,17 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment } from '../types';
+import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment, FunctionInfo, FunctionVersion } from '../types';
 
 export const tauriApi = {
+  deployFunction: async (name: string, wasmBytes: number[]): Promise<FunctionInfo> =>
+    invoke<FunctionInfo>('deploy_function', { name, wasmBytes }),
+  getFunctionVersions: async (name: string): Promise<FunctionVersion[]> =>
+    invoke<FunctionVersion[]>('get_function_versions', { name }),
+  rollbackFunction: async (name: string, version: number): Promise<void> =>
+    invoke('rollback_function', { name, version }),
+  deleteFunction: async (name: string): Promise<void> =>
+    invoke('delete_function', { name }),
    // Metrics & Logs
    getMetrics: async (): Promise<SystemMetric[]> => {
       try {
@@ -244,9 +252,6 @@ export const tauriApi = {
          return [];
       }
    },
-   getFunctionVersions: async () => [],
-   rollbackFunction: async () => { },
-
    // Storage implementation
    getBuckets: async (): Promise<StorageBucket[]> => {
       try {

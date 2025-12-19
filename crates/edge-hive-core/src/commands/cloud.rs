@@ -35,7 +35,7 @@ pub async fn handle_cloud_command(args: CloudArgs) -> anyhow::Result<()> {
 }
 
 async fn provision_cloud_node(args: ProvisionArgs) -> anyhow::Result<()> {
-    let provisioner = AWSProvisioner::new().await?;
+    let provisioner = AWSProvisioner::new(args.region).await?;
     let config = ProvisionConfig {
         user_id: "local-user".to_string(), // Placeholder
         node_name: args.node_name,

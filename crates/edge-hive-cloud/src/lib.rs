@@ -1,6 +1,8 @@
 //! Edge Hive Cloud - AWS provisioning for managed nodes
 //!
 //! Automatically provisions EC2 instances with Edge Hive pre-installed.
+//!
+//! Automatically provisions EC2 instances with Edge Hive pre-installed.
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -139,7 +141,8 @@ impl AWSProvisioner {
             config.node_name, config.user_id, config.region.as_str());
 
         let user_data = generate_user_data("placeholder-token", config.cf_tunnel_token.as_deref());
-        let encoded_user_data = base64::encode(&user_data.into_bytes());
+        use base64::{Engine as _, engine::general_purpose};
+        let encoded_user_data = general_purpose::STANDARD.encode(user_data);
 
         let run_instances_output = self.ec2_client.run_instances()
             .image_id("ami-0c55b159cbfafe1f0") // Amazon Linux 2 AMI
@@ -167,6 +170,7 @@ impl AWSProvisioner {
         } else {
             None
         }.ok_or_else(|| CloudError::ProvisioningFailed("No instances returned".to_string()))?;
+
         let instance_id = instance.instance_id().ok_or_else(|| CloudError::ProvisioningFailed("No instance ID returned".to_string()))?.to_string();
 
         let node_id = generate_node_id();
@@ -178,7 +182,7 @@ impl AWSProvisioner {
             instance_id,
             region: config.region,
             size: config.size,
-            public_ip: instance.public_ip_address().map(|s| s.to_string()),
+            public_ip: instance.public_ip_address().map(|s: &str| s.to_string()),
             tunnel_url: Some(format!("https://{}.edge-hive.io", node_id)),
             peer_id: None,
             status: NodeStatus::Provisioning,

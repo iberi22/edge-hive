@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::info;
-use aws_sdk_ec2::{Client as Ec2Client, model::{InstanceType, Tag, TagSpecification, ResourceType}};
+use aws_sdk_ec2::{Client as Ec2Client, types::{InstanceType, Tag, TagSpecification, ResourceType}};
 use aws_config::{meta::region::RegionProviderChain, BehaviorVersion};
 
 /// Errors that can occur during cloud operations
@@ -139,7 +139,7 @@ impl AWSProvisioner {
             config.node_name, config.user_id, config.region.as_str());
 
         let user_data = generate_user_data("placeholder-token", config.cf_tunnel_token.as_deref());
-        let encoded_user_data = base64::encode(user_data);
+        let encoded_user_data = base64::encode(&user_data.into_bytes());
 
         let run_instances_output = self.ec2_client.run_instances()
             .image_id("ami-0c55b159cbfafe1f0") // Amazon Linux 2 AMI
@@ -162,8 +162,12 @@ impl AWSProvisioner {
             .await
             .map_err(|e| CloudError::ProvisioningFailed(e.to_string()))?;
 
-        let instance = run_instances_output.instances().unwrap().get(0).unwrap();
-        let instance_id = instance.instance_id().unwrap().to_string();
+        let instance = if let Some(instances) = run_instances_output.instances() {
+            instances.get(0).cloned()
+        } else {
+            None
+        }.ok_or_else(|| CloudError::ProvisioningFailed("No instances returned".to_string()))?;
+        let instance_id = instance.instance_id().ok_or_else(|| CloudError::ProvisioningFailed("No instance ID returned".to_string()))?.to_string();
 
         let node_id = generate_node_id();
 

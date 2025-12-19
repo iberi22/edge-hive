@@ -48,6 +48,43 @@ pub async fn list_buckets(state: State<'_, StorageState>) -> Result<Vec<BucketDT
 }
 
 #[tauri::command]
+pub async fn create_bucket(state: State<'_, StorageState>, name: String, public: bool) -> Result<BucketDTO, String> {
+    Ok(BucketDTO {
+        id: "b3".into(),
+        name,
+        public,
+        size: "0 B".into(),
+        files_count: 0,
+    })
+}
+
+#[tauri::command]
+pub async fn delete_bucket(state: State<'_, StorageState>, bucket_id: String) -> Result<(), String> {
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn upload_file(state: State<'_, StorageState>, bucket_id: String, name: String, content: String) -> Result<FileDTO, String> {
+    Ok(FileDTO {
+        id: "f2".into(),
+        name,
+        size: "0 B".into(),
+        type_: "unknown".into(),
+        last_modified: "2024-01-01".into(),
+    })
+}
+
+#[tauri::command]
+pub async fn download_file(state: State<'_, StorageState>, bucket_id: String, file_id: String) -> Result<String, String> {
+    Ok("Hello World".into())
+}
+
+#[tauri::command]
+pub async fn delete_file(state: State<'_, StorageState>, bucket_id: String, file_id: String) -> Result<(), String> {
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn list_files(state: State<'_, StorageState>, bucket_id: String) -> Result<Vec<FileDTO>, String> {
     Ok(vec![
         FileDTO {

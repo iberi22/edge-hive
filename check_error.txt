@@ -1,0 +1,99 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Checking tor-netdir v0.20.0
+    Checking surrealdb v2.4.0
+    Checking libp2p v0.54.1
+warning: unused import: `DateTime`
+ --> crates\edge-hive-auth\src\jwt.rs:1:14
+  |
+1 | use chrono::{DateTime, Duration, Utc};
+  |              ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Deserialize` and `Serialize`
+ --> crates\edge-hive-auth\src\client.rs:1:13
+  |
+1 | use serde::{Deserialize, Serialize};
+  |             ^^^^^^^^^^^  ^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> crates\edge-hive-auth\src\middleware.rs:64:9
+   |
+64 |         mut request: Request,
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `validator` is never read
+  --> crates\edge-hive-auth\src\middleware.rs:51:5
+   |
+50 | pub struct AuthLayer {
+   |            --------- field in this struct
+51 |     validator: Arc<TokenValidator>,
+   |     ^^^^^^^^^
+   |
+   = note: `AuthLayer` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `scopes` is never read
+  --> crates\edge-hive-auth\src\middleware.rs:75:5
+   |
+74 | pub struct RequireScopes {
+   |            ------------- field in this struct
+75 |     scopes: Vec<String>,
+   |     ^^^^^^
+
+warning: `edge-hive-auth` (lib) generated 5 warnings (run `cargo fix --lib -p edge-hive-auth` to apply 3 suggestions)
+    Checking edge-hive-cloud v0.1.0 (E:\scripts-python\termux-private-edge-server\crates\edge-hive-cloud)
+warning: unused import: `zeroize::Zeroize`
+  --> crates\edge-hive-identity\src\lib.rs:12:5
+   |
+12 | use zeroize::Zeroize;
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `edge-hive-identity` (lib) generated 1 warning (run `cargo fix --lib -p edge-hive-identity` to apply 1 suggestion)
+error[E0432]: unresolved import `aws_sdk_ec2::model`
+ --> crates\edge-hive-cloud\src\lib.rs:8:40
+  |
+8 | use aws_sdk_ec2::{Client as Ec2Client, model::{InstanceType, Tag, TagSpecification, ResourceType}};
+  |                                        ^^^^^ could not find `model` in `aws_sdk_ec2`
+
+warning: use of deprecated function `base64::encode`: Use Engine::encode
+   --> crates\edge-hive-cloud\src\lib.rs:142:41
+    |
+142 |         let encoded_user_data = base64::encode(user_data);
+    |                                         ^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+error[E0599]: no method named `unwrap` found for reference `&[aws_sdk_ec2::types::Instance]` in the current scope
+   --> crates\edge-hive-cloud\src\lib.rs:165:57
+    |
+165 |         let instance = run_instances_output.instances().unwrap().get(0).unwrap();
+    |                                                         ^^^^^^
+    |
+help: there is a method `swap` with a similar name, but with different arguments
+   --> /rustc/ded5c06cf21d2b93bffd5d884aa6e96934ee4234\library\core\src\slice\mod.rs:901:5
+
+error[E0282]: type annotations needed
+   --> crates\edge-hive-cloud\src\lib.rs:177:58
+    |
+177 |             public_ip: instance.public_ip_address().map(|s| s.to_string()),
+    |                                                          ^  - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+177 |             public_ip: instance.public_ip_address().map(|s: /* Type */| s.to_string()),
+    |                                                           ++++++++++++
+
+Some errors have detailed explanations: E0282, E0432, E0599.
+For more information about an error, try `rustc --explain E0282`.
+warning: `edge-hive-cloud` (lib) generated 1 warning
+error: could not compile `edge-hive-cloud` (lib) due to 3 previous errors; 1 warning emitted
+warning: build failed, waiting for other jobs to finish...

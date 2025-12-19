@@ -11,22 +11,20 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [dependencies]
 tauri = { version = "2.0.0-beta.23", features = [] }
 tauri-plugin-shell = "2.0.0-beta.8"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-tokio = { version = "1.40", features = ["full"] }
-sysinfo = "0.30"
-portable-pty = "0.8"
-
-# Edge Hive crates (for native integration)
-edge-hive-mcp = { path = "../../crates/edge-hive-mcp" }
-edge-hive-db = { path = "../../crates/edge-hive-db" }
-edge-hive-wasm = { path = "../../crates/edge-hive-wasm" }
-edge-hive-auth = { path = "../../crates/edge-hive-auth" }
-edge-hive-billing = { path = "../../crates/edge-hive-billing" }
-edge-hive-cache = { path = "../../crates/edge-hive-cache" }
-edge-hive-tunnel = { path = "../../crates/edge-hive-tunnel" }
-uuid = "1.19.0"
-chrono = "0.4.42"
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+sysinfo.workspace = true
+portable-pty.workspace = true
+edge-hive-mcp.workspace = true
+edge-hive-db.workspace = true
+edge-hive-wasm.workspace = true
+edge-hive-auth.workspace = true
+edge-hive-billing.workspace = true
+edge-hive-cache.workspace = true
+edge-hive-tunnel.workspace = true
+uuid.workspace = true
+chrono.workspace = true
 rand.workspace = true
 # edge-hive-identity = { path = "../../crates/edge-hive-identity" }
 # edge-hive-discovery = { path = "../../crates/edge-hive-discovery" }

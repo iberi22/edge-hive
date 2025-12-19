@@ -17,8 +17,13 @@ tracing.workspace = true
 # stripe-rust = "0.26"
 
 # JWT for user tokens
-jsonwebtoken = "9"
-chrono = { version = "0.4", features = ["serde"] }
+jsonwebtoken.workspace = true
+chrono.workspace = true
+
+# Stripe SDK (removed old broken versions)
+# stripe-rust = { version = "0.12.3", features = ["webhook-events"] }
+# stripe = "0.0.5"
 
 [dev-dependencies]
 tokio-test = "0.4"
+# stripe-rust = { git = "https://github.com/stripe/stripe-rust", rev = "b374187" }

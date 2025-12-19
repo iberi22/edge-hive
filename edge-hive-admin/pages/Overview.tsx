@@ -211,7 +211,7 @@ const Overview: React.FC = () => {
 
         const setupSubscription = async () => {
             // @ts-ignore - Dynamic import or direct usage
-            const { tauriApi } = await import('./tauriClient'); // Lazy load to avoid cycle if any
+            const { tauriApi } = await import('../api/tauriClient'); // Lazy load to avoid cycle if any
             unlisten = await tauriApi.subscribeToMetrics((metric: SystemMetric) => {
                 setData(prev => {
                     const newPoint = {

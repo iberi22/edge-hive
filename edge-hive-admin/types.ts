@@ -285,3 +285,37 @@ export interface Subscription {
   status: 'active' | 'past_due' | 'canceled';
   current_period_end: string;
 }
+
+export interface PlanInfo {
+  id: string;
+  name: string;
+  price: string;
+  pricePeriod: string;
+  features: string[];
+  recommended: boolean;
+}
+
+export interface CloudRegion {
+  id: string;
+  name: string;
+  location: string;
+  available: boolean;
+}
+
+export interface InstanceSize {
+  id: string;
+  name: string;
+  vcpus: number;
+  memoryGb: number;
+  monthlyPrice: string;
+}
+
+export interface CloudNode {
+  id: string;
+  name: string;
+  region: string;
+  instanceType: string;
+  status: 'pending' | 'running' | 'stopping' | 'stopped' | 'terminated';
+  ipAddress: string;
+  createdAt: string;
+}

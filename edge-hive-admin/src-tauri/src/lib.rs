@@ -25,6 +25,7 @@ pub mod cache_commands;
 pub mod tunnel_commands;
 pub mod settings_commands;
 pub mod cloud_commands;
+mod task_commands;
 
 
 // Use Commands & States
@@ -71,7 +72,6 @@ pub fn run() {
         .manage(ServerState {
             pid: Mutex::new(None),
         })
-        .manage(DatabaseState::new())
         .manage(AuthState::new())
         .manage(BillingState::new())
         .manage(TunnelState::new())
@@ -88,6 +88,12 @@ pub fn run() {
                 app_handle.manage(StorageState {
                     root_dir: storage_path,
                 });
+
+                // Initialize Database State
+                let db_service = tauri::async_runtime::block_on(async {
+                    DatabaseService::new(&db_path).await.expect("Failed to initialize database")
+                });
+                app_handle.manage(DatabaseState::new(db_service));
             }
 
             // Initialize Chaos State
@@ -171,9 +177,12 @@ pub fn run() {
             cache_commands::clear_cache,
             cache_commands::get_cache_keys,
             // Tunnel
-            tunnel_commands::start_tunnel,
             tunnel_commands::stop_tunnel,
-            tunnel_commands::get_tunnel_status
+            tunnel_commands::get_tunnel_status,
+            // Tasks
+            task_commands::get_tasks,
+            task_commands::save_task,
+            task_commands::delete_task
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

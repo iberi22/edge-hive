@@ -42,6 +42,19 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
+/// Task information stored in the database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredTask {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub status: String,
+    pub priority: String,
+    pub due_date: surrealdb::Datetime,
+    pub created_at: surrealdb::Datetime,
+    pub assignee: Option<String>,
+}
+
 /// Database service for Edge Hive
 pub struct DatabaseService {
     db: Surreal<surrealdb::engine::local::Db>,
@@ -104,6 +117,66 @@ impl DatabaseService {
             )
             .await?;
 
+        // Define task table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS task SCHEMAFULL;
+                DEFINE FIELD title ON task TYPE string;
+                DEFINE FIELD description ON task TYPE string;
+                DEFINE FIELD status ON task TYPE string;
+                DEFINE FIELD priority ON task TYPE string;
+                DEFINE FIELD due_date ON task TYPE datetime;
+                DEFINE FIELD created_at ON task TYPE datetime;
+                DEFINE FIELD assignee ON task TYPE option<string>;
+                "#,
+            )
+            .await?;
+
+        // Seed initial tasks if table is empty
+        let mut count_resp = self.db.query("SELECT count() FROM task GROUP ALL").await?;
+        let count: Option<i64> = count_resp.take("count").unwrap_or(None);
+
+        if count.unwrap_or(0) == 0 {
+            info!("🌱 Seeding initial tasks into database");
+            let initial_tasks = vec![
+                StoredTask {
+                    id: "TSK-942".into(),
+                    title: "Provision Hidden Onion Service (v3)".into(),
+                    description: "Generating ED25519 identity keys and configuring Tor circuits.".into(),
+                    status: "processing".into(),
+                    priority: "high".into(),
+                    due_date: chrono::Utc::now().into(),
+                    created_at: chrono::Utc::now().into(),
+                    assignee: Some("neural_agent".into()),
+                },
+                StoredTask {
+                    id: "TSK-119".into(),
+                    title: "Update VPN Mesh Peer Lattice".into(),
+                    description: "Broadcasting new public keys to all peers in the WireGuard mesh.".into(),
+                    status: "completed".into(),
+                    priority: "critical".into(),
+                    due_date: chrono::Utc::now().into(),
+                    created_at: chrono::Utc::now().into(),
+                    assignee: Some("wg_daemon".into()),
+                },
+                StoredTask {
+                    id: "TSK-032".into(),
+                    title: "Self-Heal Shard HN-02".into(),
+                    description: "Relocating data shards post-entropy scan.".into(),
+                    status: "pending".into(),
+                    priority: "medium".into(),
+                    due_date: chrono::Utc::now().into(),
+                    created_at: chrono::Utc::now().into(),
+                    assignee: Some("shard_balancer".into()),
+                },
+            ];
+
+            for task in initial_tasks {
+                let _ = self.save_task(&task).await;
+            }
+        }
+
         info!("✅ Database schema initialized");
         Ok(())
     }
@@ -161,6 +234,34 @@ impl DatabaseService {
         } else {
             Ok(None)
         }
+    }
+
+    /// Save or update a task
+    pub async fn save_task(&self, task: &StoredTask) -> Result<(), DbError> {
+        let _: Option<StoredTask> = self.db
+            .upsert(("task", task.id.as_str()))
+            .content(task.clone())
+            .await?;
+
+        Ok(())
+    }
+
+    /// Get all tasks
+    pub async fn get_tasks(&self) -> Result<Vec<StoredTask>, DbError> {
+        let tasks: Vec<StoredTask> = self.db.select("task").await?;
+        Ok(tasks)
+    }
+
+    /// Get a task by ID
+    pub async fn get_task(&self, id: &str) -> Result<Option<StoredTask>, DbError> {
+        let task: Option<StoredTask> = self.db.select(("task", id)).await?;
+        Ok(task)
+    }
+
+    /// Delete a task
+    pub async fn delete_task(&self, id: &str) -> Result<(), DbError> {
+        let _: Option<StoredTask> = self.db.delete(("task", id)).await?;
+        Ok(())
     }
 
     /// Execute a raw SurrealQL query

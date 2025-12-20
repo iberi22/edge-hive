@@ -5,7 +5,7 @@ import {
   ChevronDown, ArrowUp, ArrowDown, RefreshCw, MoreVertical, Briefcase,
   Ghost, Lock, Zap
 } from 'lucide-react';
-import { mockApi } from '../api';
+import { tauriApi } from '../api';
 import { SystemTask } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -25,15 +25,8 @@ const Tasks: React.FC = () => {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      // Extended Mock Tasks for the new modules
-      const baseTasks = await mockApi.getTasks();
-      const extendedTasks: SystemTask[] = [
-        ...baseTasks,
-        { id: 'TSK-942', title: 'Provision Hidden Onion Service (v3)', description: 'Generating ED25519 identity keys and configuring Tor circuits.', status: 'processing', priority: 'high', due_date: new Date().toISOString(), created_at: new Date().toISOString(), assignee: 'neural_agent' },
-        { id: 'TSK-119', title: 'Update VPN Mesh Peer Lattice', description: 'Broadcasting new public keys to all peers in the WireGuard mesh.', status: 'completed', priority: 'critical', due_date: new Date().toISOString(), created_at: new Date().toISOString(), assignee: 'wg_daemon' },
-        { id: 'TSK-032', title: 'Self-Heal Shard HN-02', description: 'Relocating data shards post-entropy scan.', status: 'pending', priority: 'medium', due_date: new Date().toISOString(), created_at: new Date().toISOString(), assignee: 'shard_balancer' },
-      ];
-      setTasks(extendedTasks);
+      const data = await tauriApi.getTasks();
+      setTasks(data);
     } catch (e) {
       toast.error("Failed to load tasks");
     } finally {

@@ -4,25 +4,14 @@ use std::sync::Arc;
 use tauri::State;
 
 pub struct DatabaseState {
-    // Stub service
-    pub service: DatabaseServiceStub,
-}
-
-pub struct DatabaseServiceStub;
-
-impl DatabaseServiceStub {
-    pub async fn query(&self, _query: &str) -> Result<Vec<()>, String> {
-        Ok(vec![])
-    }
-    // Assuming query_json is also needed for the stub to compile with db_query
-    pub async fn query_json(&self, _query: &str) -> Result<Vec<Value>, String> {
-        Ok(vec![])
-    }
+    pub service: Arc<DatabaseService>,
 }
 
 impl DatabaseState {
-    pub fn new() -> Self {
-        Self { service: DatabaseServiceStub }
+    pub fn new(service: DatabaseService) -> Self {
+        Self {
+            service: Arc::new(service),
+        }
     }
 }
 

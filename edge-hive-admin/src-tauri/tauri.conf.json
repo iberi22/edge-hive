@@ -1,8 +1,8 @@
 {
    "$schema": "https://tauri.app/v2/schema.json",
    "productName": "Edge Hive Admin",
-   "identifier": "io.edge-hive.admin",
    "version": "0.1.0",
+   "identifier": "com.edgehive.admin",
    "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
@@ -11,11 +11,27 @@
    },
    "bundle": {
       "active": true,
-      "targets": "all",
+      "targets": ["msi", "nsis"],
       "icon": [
-         "icons/icon.ico"
-      ]
-   },
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "resources": [],
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": "",
+        "wix": null,
+        "nsis": {
+          "installerIcon": "icons/icon.ico",
+          "headerImage": null,
+          "sidebarImage": null
+        }
+      }
+    },
    "app": {
       "withGlobalTauri": true,
       "windows": [
@@ -34,26 +50,5 @@
          "csp": null
       }
    },
-   "plugins": {},
-   "systemTray": {
-     "iconPath": "icons/icon.png",
-     "iconAsTemplate": true
-   },
-   "tray": {
-     "menu": [
-       {
-         "id": "quit",
-         "text": "Quit",
-         "accelerator": "CmdOrCtrl+Q"
-       }
-     ]
-   },
-   "sidecar": {
-     "scripts": [
-       {
-         "name": "edge-hive-core",
-         "path": "../../target/release/edge-hive-core"
-       }
-     ]
-   }
+   "plugins": {}
 }

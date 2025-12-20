@@ -13,16 +13,9 @@ anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
-# Stripe SDK (when we implement)
-# stripe-rust = "0.26"
-
-# JWT for user tokens
-jsonwebtoken.workspace = true
 chrono.workspace = true
-
-# Stripe SDK (removed old broken versions)
-# stripe-rust = { version = "0.12.3", features = ["webhook-events"] }
-# stripe = "0.0.5"
+jsonwebtoken.workspace = true
+async-stripe = { workspace = true, features = ["runtime-tokio-hyper", "webhook-events"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

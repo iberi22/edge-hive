@@ -25,7 +25,7 @@ thiserror.workspace = true
 anyhow.workspace = true
 
 # HTTP types (for integration with Axum)
-axum = { version = "0.7", optional = true }
+axum = { version = "0.8", optional = true }
 tower = { version = "0.5", optional = true }
 tower-http = { version = "0.6", features = ["auth"], optional = true }
 

@@ -143,7 +143,7 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 sha2 = "0.10"
 hex = "0.4"
 mime_guess = "2.0"
-directories = "5.0"
+directories = "6.0"
 tempfile = "3.10"
 sha3 = "0.10"
 data-encoding = "2.6"

@@ -1,140 +1,61 @@
-# Docker Compose for Edge Hive multi-node local testing
-version: "3.9"
+version: '3.8'
 
 services:
-  # Node 1: Bootstrap node with full features
-  node1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: edge-hive-node1
-    hostname: node1
-    environment:
-      - RUST_LOG=info,edge_hive=debug
-      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
-      - EDGE_HIVE_NODE_NAME=bootstrap-node
-      - EDGE_HIVE_BOOTSTRAP=true
-      - EDGE_HIVE_MCP_AUTH_ENABLED=true
-      - EDGE_HIVE_OAUTH2_ISSUER=http://node1:8080
+  edge-hive:
+    build: .
+    container_name: edge-hive
     ports:
-      - "8080:8080" # HTTP/HTTPS MCP API
-      - "4001:4001/udp" # libp2p QUIC
-    networks:
-      - edgehive_net
+      - "8080:8080"
+      - "4433:4433"
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=ws://surrealdb:8000
+      - REDIS_URL=redis://redis:6379
     volumes:
-      - node1_data:/data
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        set -e
-        edge-hive identity show --config-dir /data/.edge-hive >/dev/null 2>&1 || edge-hive identity new --config-dir /data/.edge-hive
-        exec edge-hive start --config-dir /data/.edge-hive --port 8080 --discovery
+      - edge_hive_data:/data/edge-hive
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - edge-hive-net
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    container_name: surrealdb
+    command: start --user root --pass root --bind 0.0.0.0:8000 file:/data/surreal.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surrealdb_data:/data
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:8080/health",
-        ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
       start_period: 10s
+    restart: unless-stopped
+    networks:
+      - edge-hive-net
 
-  # Node 2: Regular node connecting to bootstrap
-  node2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: edge-hive-node2
-    hostname: node2
-    environment:
-      - RUST_LOG=info,edge_hive=debug
-      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
-      - EDGE_HIVE_NODE_NAME=worker-node-2
-      - EDGE_HIVE_BOOTSTRAP_PEERS=/dns4/node1/udp/4001/quic-v1
-      - EDGE_HIVE_MCP_AUTH_ENABLED=true
-      - EDGE_HIVE_OAUTH2_ISSUER=http://node1:8080
+  redis:
+    image: redis:7-alpine
+    container_name: redis
     ports:
-      - "8081:8080"
-      - "4002:4001/udp"
-    networks:
-      - edgehive_net
+      - "6379:6379"
     volumes:
-      - node2_data:/data
-    depends_on:
-      node1:
-        condition: service_healthy
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        set -e
-        edge-hive identity show --config-dir /data/.edge-hive >/dev/null 2>&1 || edge-hive identity new --config-dir /data/.edge-hive
-        exec edge-hive start --config-dir /data/.edge-hive --port 8080 --discovery --bootstrap-peer /dns4/node1/udp/4001/quic-v1
-
-  # Node 3: Regular node for load testing
-  node3:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: edge-hive-node3
-    hostname: node3
-    environment:
-      - RUST_LOG=info,edge_hive=debug
-      - EDGE_HIVE_DATA_DIR=/data/.edge-hive
-      - EDGE_HIVE_NODE_NAME=worker-node-3
-      - EDGE_HIVE_BOOTSTRAP_PEERS=/dns4/node1/udp/4001/quic-v1
-      - EDGE_HIVE_MCP_AUTH_ENABLED=true
-      - EDGE_HIVE_OAUTH2_ISSUER=http://node1:8080
-    ports:
-      - "8082:8080"
-      - "4003:4001/udp"
+      - redis_data:/data
+    restart: unless-stopped
     networks:
-      - edgehive_net
-    volumes:
-      - node3_data:/data
-    depends_on:
-      node1:
-        condition: service_healthy
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        set -e
-        edge-hive identity show --config-dir /data/.edge-hive >/dev/null 2>&1 || edge-hive identity new --config-dir /data/.edge-hive
-        exec edge-hive start --config-dir /data/.edge-hive --port 8080 --discovery --bootstrap-peer /dns4/node1/udp/4001/quic-v1
-
-  # MCP Client Test Container (for AI agents simulation)
-  mcp-client:
-    image: alpine:3.19
-    container_name: edge-hive-mcp-client
-    networks:
-      - edgehive_net
-    depends_on:
-      - node1
-      - node2
-      - node3
-    command: |
-      sh -c "
-        apk add --no-cache curl jq &&
-        echo 'MCP Client ready. Test with:' &&
-        echo 'curl -X POST http://node1:8080/mcp/auth/token -d ...' &&
-        tail -f /dev/null
-      "
-
-networks:
-  edgehive_net:
-    driver: bridge
+      - edge-hive-net
 
 volumes:
-  node1_data:
-    driver: local
-  node2_data:
-    driver: local
-  node3_data:
-    driver: local
+  edge_hive_data:
+  surrealdb_data:
+  redis_data:
+
+networks:
+  edge-hive-net:
+    driver: bridge

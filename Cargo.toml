@@ -18,7 +18,7 @@ members = [
 
 [workspace.package]
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/your-org/edge-hive"
 authors = ["Edge Hive Contributors"]
@@ -58,17 +58,17 @@ edge-hive-identity.workspace = true
 edge-hive-core = { path = "crates/edge-hive-core" }
 edge-hive-discovery = { path = "crates/edge-hive-discovery" }
 edge-hive-auth = { path = "crates/edge-hive-auth", features = ["server"] }
-reqwest = { version = "0.12", features = ["json"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-chrono = { version = "0.4", features = ["serde"] }
-libp2p = { workspace = true }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+libp2p.workspace = true
 
 # Utils
-directories = "5.0"
+directories.workspace = true
 
 [dev-dependencies]
-tempfile = "3.10"
+tempfile.workspace = true
 assert_cmd = "2.0"
 predicates = "3.1"
 
@@ -112,9 +112,7 @@ libp2p = { version = "0.54", features = [
     "mdns",
     "kad",
     "noise",
-    "quic",
     "tcp",
-    "dns",
     "identify",
     "yamux",
     "macros",
@@ -134,6 +132,27 @@ clap = { version = "4", features = ["derive"] }
 # Config
 config = "0.14"
 
+# HTTP Client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+jsonwebtoken = "9.3"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+sha2 = "0.10"
+hex = "0.4"
+mime_guess = "2.0"
+directories = "5.0"
+tempfile = "3.10"
+sha3 = "0.10"
+data-encoding = "2.6"
+ed25519-consensus = "2"
+which = "6.0"
+sysinfo = "0.30"
+portable-pty = "0.8"
+base64 = "0.22"
+async-stripe = { version = "0.41", features = ["runtime-tokio-hyper", "webhook-events"] }
+
 # Internal crates
 edge-hive-core = { path = "crates/edge-hive-core" }
 edge-hive-identity = { path = "crates/edge-hive-identity" }
@@ -143,6 +162,11 @@ edge-hive-db = { path = "crates/edge-hive-db" }
 edge-hive-wasm = { path = "crates/edge-hive-wasm" }
 edge-hive-billing = { path = "crates/edge-hive-billing" }
 edge-hive-cloud = { path = "crates/edge-hive-cloud" }
+edge-hive-auth = { path = "crates/edge-hive-auth" }
+edge-hive-cache = { path = "crates/edge-hive-cache" }
+edge-hive-api = { path = "crates/edge-hive-api" }
+edge-hive-realtime = { path = "crates/edge-hive-realtime" }
+edge-hive-mcp = { path = "crates/edge-hive-mcp" }
 
 [profile.release]
 lto = true

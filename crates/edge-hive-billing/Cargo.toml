@@ -13,15 +13,10 @@ anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
-# Stripe SDK (when we implement)
-# stripe-rust = "0.26"
-
-# JWT for user tokens
-jsonwebtoken = "9"
-chrono = { version = "0.4", features = ["serde"] }
-stripe-rust = { version = "0.26.0", features = ["webhook-events"] }
-stripe = "0.0.5"
+chrono.workspace = true
+jsonwebtoken.workspace = true
+async-stripe = { workspace = true, features = ["runtime-tokio-hyper", "webhook-events"] }
 
 [dev-dependencies]
 tokio-test = "0.4"
-stripe-rust = { version = "0.26.0", features = ["webhook-events"] }
+# stripe-rust = { git = "https://github.com/stripe/stripe-rust", rev = "b374187" }

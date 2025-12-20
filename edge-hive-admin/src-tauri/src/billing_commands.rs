@@ -1,57 +1,39 @@
-use tauri::State;
-use edge_hive_billing::{BillingService, Plan, Subscription, SubscriptionStatus, UsageMetrics};
 use serde::{Deserialize, Serialize};
 
-pub struct BillingState {
-    pub service: BillingService,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Subscription {
+    pub id: String,
+    pub plan: String,
+    pub status: String,
 }
 
-impl BillingState {
-    pub fn new() -> Self {
-        Self {
-            service: BillingService::new("key", "secret"),
-        }
-    }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Plan {
+    pub id: String,
+    pub name: String,
+    pub price: f32,
 }
 
 #[tauri::command]
-pub async fn get_subscription_status(
-    _state: State<'_, BillingState>
-) -> Result<Subscription, String> {
-    // Stub data
+pub async fn get_subscription_status() -> Result<Subscription, String> {
     Ok(Subscription {
-        id: "sub_123".to_string(),
-        user_id: "user_123".to_string(),
-        plan: Plan::Pro,
-        status: SubscriptionStatus::Active,
-        current_period_end: chrono::Utc::now() + chrono::Duration::days(30),
-        stripe_customer_id: Some("cus_123".to_string()),
-        stripe_subscription_id: Some("sub_123".to_string()),
+        id: "sub_123".into(),
+        plan: "Pro".into(),
+        status: "active".into(),
     })
 }
 
 #[tauri::command]
-pub async fn get_usage_metrics(
-    state: State<'_, BillingState>
-) -> Result<UsageMetrics, String> {
-    state.service.get_usage("user_123").await.map_err(|e| e.to_string())
+pub async fn get_available_plans() -> Result<Vec<Plan>, String> {
+    Ok(vec![
+        Plan { id: "free".into(), name: "Free".into(), price: 0.0 },
+        Plan { id: "pro".into(), name: "Pro".into(), price: 10.0 },
+        Plan { id: "team".into(), name: "Team".into(), price: 25.0 },
+        Plan { id: "enterprise".into(), name: "Enterprise".into(), price: 100.0 },
+    ])
 }
 
 #[tauri::command]
-pub async fn create_checkout_session(
-    state: State<'_, BillingState>,
-    plan: String
-) -> Result<String, String> {
-    let plan_enum = match plan.as_str() {
-        "Pro" => Plan::Pro,
-        "Team" => Plan::Team,
-        "Enterprise" => Plan::Enterprise,
-        _ => Plan::Free,
-    };
-
-    let session = state.service.create_checkout_session("user_123", plan_enum, "http://localhost:1420/billing")
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(session.url)
+pub async fn create_checkout_session(plan: String) -> Result<String, String> {
+    Ok("https://checkout.stripe.com/...".to_string())
 }

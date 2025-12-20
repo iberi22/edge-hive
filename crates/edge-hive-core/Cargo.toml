@@ -20,7 +20,7 @@ tower.workspace = true
 tower-http.workspace = true
 
 # Static file content-types
-mime_guess = "2.0"
+mime_guess.workspace = true
 
 # TLS/HTTPS
 axum-server = { version = "0.7", features = ["tls-rustls"] }
@@ -47,10 +47,10 @@ clap.workspace = true
 config.workspace = true
 
 # Platform directories
-directories = "5.0"
-chrono = { version = "0.4", features = ["serde"] }
-jsonwebtoken = "9.3"                               # For JWT verification
-uuid = { version = "1.11", features = ["v4"] }
+directories.workspace = true
+chrono.workspace = true
+jsonwebtoken.workspace = true
+uuid.workspace = true
 
 # Internal crates
 edge-hive-identity.workspace = true
@@ -61,17 +61,17 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
 edge-hive-api = { path = "../edge-hive-api" }
 edge-hive-auth = { path = "../edge-hive-auth", features = ["server"] }
-edge-hive-cloud = { path = "../edge-hive-cloud" }
+edge-hive-cloud.workspace = true
 
 # P2P Networking
 libp2p.workspace = true
-reqwest = { version = "0.12", features = ["json"] }
+reqwest.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4"
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.10"
+tempfile.workspace = true
 hyper = "1.8.1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 tokio-tungstenite = "0.24"

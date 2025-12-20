@@ -1,7 +1,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment } from '../types';
+import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment, PlanInfo, CloudRegion, InstanceSize, CloudNode } from '../types';
 
 export const tauriApi = {
    // Metrics & Logs
@@ -166,6 +166,114 @@ export const tauriApi = {
       }
    },
 
+   getAvailablePlans: async () => {
+      try {
+         return await invoke<PlanInfo[]>('get_available_plans');
+      } catch (e) {
+         console.error("Failed to get plans", e);
+         return [];
+      }
+   },
+
+   getBillingPortalUrl: async () => {
+      try {
+         return await invoke<string>('get_billing_portal_url');
+      } catch (e) {
+         console.error("Failed to get portal URL", e);
+         throw e;
+      }
+   },
+
+   updateSubscription: async (plan: string, stripeSubscriptionId?: string) => {
+      try {
+         return await invoke('update_subscription', { plan, stripeSubscriptionId });
+      } catch (e) {
+         console.error("Failed to update subscription", e);
+         throw e;
+      }
+   },
+
+   isStripeConfigured: async () => {
+      try {
+         return await invoke<boolean>('is_stripe_configured');
+      } catch (e) {
+         console.error("Failed to check Stripe config", e);
+         return false;
+      }
+   },
+
+   cancelSubscription: async () => {
+      try {
+         await invoke('cancel_subscription');
+      } catch (e) {
+         console.error("Failed to cancel subscription", e);
+         throw e;
+      }
+   },
+
+   recordUsage: async (data: { storageBytes?: number; egressBytes?: number; apiRequests?: number; activeNodes?: number }) => {
+      try {
+         await invoke('record_usage', data);
+      } catch (e) {
+         console.error("Failed to record usage", e);
+      }
+   },
+
+   // Cloud Bindings
+   getCloudRegions: async () => {
+      try {
+         return await invoke<CloudRegion[]>('get_cloud_regions');
+      } catch (e) {
+         console.error("Failed to get regions", e);
+         return [];
+      }
+   },
+
+   getInstanceSizes: async () => {
+      try {
+         return await invoke<InstanceSize[]>('get_instance_sizes');
+      } catch (e) {
+         console.error("Failed to get instance sizes", e);
+         return [];
+      }
+   },
+
+   terminateCloudNode: async (nodeId: string) => {
+      try {
+         await invoke('terminate_cloud_node', { nodeId });
+      } catch (e) {
+         console.error("Failed to terminate node", e);
+         throw e;
+      }
+   },
+
+   restartCloudNode: async (nodeId: string) => {
+      try {
+         await invoke('restart_cloud_node', { nodeId });
+      } catch (e) {
+         console.error("Failed to restart node", e);
+         throw e;
+      }
+   },
+
+   getCloudNode: async (nodeId: string) => {
+      try {
+         return await invoke<CloudNode>('get_cloud_node', { nodeId });
+      } catch (e) {
+         console.error("Failed to get node", e);
+         throw e;
+      }
+   },
+
+   isAwsConfigured: async () => {
+      try {
+         return await invoke<boolean>('is_aws_configured');
+      } catch (e) {
+         console.error("Failed to check AWS config", e);
+         return false;
+      }
+   },
+
    // Cache
    getCacheMetrics: async (): Promise<CacheMetrics> => {
       try {
@@ -284,7 +392,14 @@ export const tauriApi = {
    getBackups: async () => [],
    getTopPaths: async () => [],
    getAccessLogs: async () => [],
-   getTasks: async () => [],
+   getTasks: async (): Promise<SystemTask[]> => {
+      try {
+         return await invoke<SystemTask[]>('get_tasks');
+      } catch (e) {
+         console.error("Failed to fetch tasks", e);
+         return [];
+      }
+   },
    invokeFunction: async (fnId: string, payload: any) => {
       try {
          const result = await invoke<any>('invoke_function', { id: fnId, payload });

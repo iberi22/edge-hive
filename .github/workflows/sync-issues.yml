@@ -1,0 +1,129 @@
+name: Sync Issues
+
+on:
+  # Trigger when issues are opened, closed, or deleted
+  issues:
+    types: [opened, closed, deleted, reopened]
+
+  # Also allow manual trigger
+  workflow_dispatch:
+
+  # Run daily to catch any out-of-sync issues
+  schedule:
+    - cron: '0 6 * * *'  # 6 AM UTC daily
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  sync-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Clean Closed Issues
+        run: |
+          echo "🧹 Cleaning closed issues from local folder..."
+
+          ISSUES_DIR=".github/issues"
+          DELETED=0
+
+          # Get list of closed issue numbers
+          CLOSED_ISSUES=$(gh issue list --state closed --limit 200 --json number --jq '.[].number')
+
+          # Check each local file
+          for file in "$ISSUES_DIR"/*.md; do
+            [ -e "$file" ] || continue
+
+            filename=$(basename "$file")
+
+            # Skip template and hidden files
+            [[ "$filename" == _* ]] && continue
+            [[ "$filename" == .* ]] && continue
+
+            # Check if file has github_issue field
+            issue_num=$(grep -oP 'github_issue:\s*\K\d+' "$file" 2>/dev/null || echo "")
+
+            if [ -n "$issue_num" ]; then
+              # Check if this issue is in the closed list
+              if echo "$CLOSED_ISSUES" | grep -q "^${issue_num}$"; then
+                echo "🗑️ Deleting: $filename (issue #$issue_num is closed)"
+                rm "$file"
+                DELETED=$((DELETED + 1))
+              fi
+            fi
+          done
+
+          echo "✅ Deleted $DELETED files"
+
+      - name: Commit Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .github/issues/
+            git commit -m "chore: sync closed issues [skip ci]"
+            git push
+            echo "✅ Changes committed"
+          else
+            echo "ℹ️ No changes to commit"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Issue Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Open Issues | $(gh issue list --state open --limit 1 --json number --jq 'length') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Closed Issues | $(gh issue list --state closed --limit 1 --json number --jq 'length') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Local Files | $(ls -1 .github/issues/*.md 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
+
+  # Job to handle issue deletion from GitHub UI
+  on-issue-closed:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find and Delete Local File
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          echo "🔍 Looking for local file for issue #$ISSUE_NUMBER: $ISSUE_TITLE"
+
+          ISSUES_DIR=".github/issues"
+
+          # Search by github_issue field
+          for file in "$ISSUES_DIR"/*.md; do
+            [ -e "$file" ] || continue
+
+            if grep -q "github_issue: $ISSUE_NUMBER" "$file" 2>/dev/null; then
+              echo "🗑️ Found and deleting: $file"
+              rm "$file"
+
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add "$file"
+              git commit -m "chore: remove closed issue #$ISSUE_NUMBER [skip ci]"
+              git push
+              exit 0
+            fi
+          done
+
+          echo "ℹ️ No local file found for issue #$ISSUE_NUMBER"

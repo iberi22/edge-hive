@@ -138,7 +138,7 @@ reqwest = { version = "0.12", features = ["json"] }
 
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
-jsonwebtoken = "9.3"
+jsonwebtoken = "10.2"
 uuid = { version = "1.11", features = ["v4", "serde"] }
 sha2 = "0.10"
 hex = "0.4"

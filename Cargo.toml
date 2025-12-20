@@ -108,7 +108,7 @@ rand = "0.8"
 blake3 = "1.5"                                                # Fast hashing for node IDs
 
 # P2P Networking
-libp2p = { version = "0.54", features = [
+libp2p = { version = "0.56", features = [
     "tokio",
     "mdns",
     "kad",

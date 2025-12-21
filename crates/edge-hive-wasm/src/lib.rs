@@ -27,6 +27,17 @@ pub enum WasmError {
 
     #[error("Wasmtime error: {0}")]
     Wasmtime(#[from] wasmtime::Error),
+
+    #[error("Invalid WASM file: {0}")]
+    InvalidFile(String),
+}
+
+/// Validate WASM magic bytes
+pub fn validate_wasm_bytes(bytes: &[u8]) -> Result<(), WasmError> {
+    if bytes.len() < 4 || bytes[0..4] != [0x00, 0x61, 0x73, 0x6D] {
+        return Err(WasmError::InvalidFile("Invalid magic bytes".into()));
+    }
+    Ok(())
 }
 
 /// Plugin metadata
@@ -139,9 +150,13 @@ impl PluginManager {
         self.plugins.get_mut(index)
     }
 
-    /// List all plugin info
     pub fn list(&self) -> Vec<&PluginInfo> {
         self.plugins.iter().map(|p| p.info()).collect()
+    }
+
+    /// Unload a plugin by name
+    pub fn unload(&mut self, name: &str) {
+        self.plugins.retain(|p| p.info().name != name);
     }
 }
 

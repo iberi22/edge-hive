@@ -99,7 +99,7 @@ pub async fn start_server(
     let sidecar = app
         .shell()
         .sidecar("edge-hive-core")
-        .map_err(|e| e.to-string())?;
+        .map_err(|e| e.to_string())?;
     let (mut rx, child) = sidecar
         .args(["--port", &port.to_string()])
         .spawn()
@@ -110,11 +110,13 @@ pub async fn start_server(
     tokio::spawn(async move {
         while let Some(event) = rx.recv().await {
             match event {
-                tauri_plugin_shell::Event::Stdout(line) => {
-                    println!("[sidecar] {}", line);
+                tauri_plugin_shell::process::CommandEvent::Stdout(line) => {
+                    let line_str = String::from_utf8_lossy(&line);
+                    println!("[sidecar] {}", line_str);
                 }
-                tauri_plugin_shell::Event::Stderr(line) => {
-                    eprintln!("[sidecar] {}", line);
+                tauri_plugin_shell::process::CommandEvent::Stderr(line) => {
+                    let line_str = String::from_utf8_lossy(&line);
+                    eprintln!("[sidecar] {}", line_str);
                 }
                 _ => {}
             }
@@ -140,20 +142,4 @@ pub async fn stop_server(state: tauri::State<'_, ServerState>) -> Result<(), Str
     Ok(())
 }
 
-/// Get user's cloud nodes
-#[tauri::command]
-pub async fn get_cloud_nodes() -> Result<Vec<CloudNode>, String> {
-    // TODO: Fetch from API
-    Ok(vec![])
-}
-
-/// Provision a new cloud node
-#[tauri::command]
-pub async fn provision_cloud_node(
-    region: String,
-    size: String,
-) -> Result<CloudNode, String> {
-    // TODO: Call provisioning API
-    Err("Cloud provisioning not yet implemented".into())
-}
 

@@ -26,6 +26,10 @@ edge-hive-tunnel.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 rand.workspace = true
+base64 = "0.21"
+hex = "0.4"
+flate2 = "1.0"
+tar = "0.4"
 # edge-hive-identity = { path = "../../crates/edge-hive-identity" }
 # edge-hive-discovery = { path = "../../crates/edge-hive-discovery" }
 

@@ -103,7 +103,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Crypto
 ed25519-dalek = { version = "2.2", features = ["rand_core"] }
-rand = "0.8"
+rand = "0.9"
 blake3 = "1.5"                                                # Fast hashing for node IDs
 
 # P2P Networking

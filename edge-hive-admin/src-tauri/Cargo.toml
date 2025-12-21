@@ -26,6 +26,7 @@ edge-hive-tunnel.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 rand.workspace = true
+which.workspace = true
 base64 = "0.21"
 hex = "0.4"
 flate2 = "1.0"

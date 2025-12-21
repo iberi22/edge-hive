@@ -113,7 +113,7 @@ impl TunnelService {
 
         info!("🚇 Starting quick tunnel to port {}", local_port);
 
-        let mut child = Command::new("cloudflared")
+        let child = Command::new("cloudflared")
             .args([
                 "tunnel",
                 "--no-autoupdate",

@@ -11,9 +11,23 @@ pub struct VpnPeer {
     pub transfer_tx: u64,
 }
 
+/// Check if WireGuard is installed
+fn check_wg_installed() -> Result<(), String> {
+    if which::which("wg").is_err() {
+        return Err("WireGuard (wg) is not installed or not in PATH. Please install WireGuard.".into());
+    }
+    Ok(())
+}
+
 /// Parse output from `wg show all dump`
 #[tauri::command]
 pub async fn get_vpn_peers() -> Result<Vec<VpnPeer>, String> {
+    if let Err(e) = check_wg_installed() {
+        // For development/demo without wg, return empty list instead of erroring loudly on dashboard
+        eprintln!("WireGuard check failed: {}", e);
+        return Ok(Vec::new());
+    }
+
     let output = Command::new("wg")
         .args(["show", "all", "dump"])
         .output()
@@ -42,6 +56,8 @@ pub async fn get_vpn_peers() -> Result<Vec<VpnPeer>, String> {
 /// Generate WireGuard keypair
 #[tauri::command]
 pub async fn generate_vpn_keypair() -> Result<(String, String), String> {
+    check_wg_installed()?;
+
     let privkey = Command::new("wg")
         .arg("genkey")
         .output()
@@ -68,9 +84,12 @@ pub async fn generate_vpn_config(
     peer_endpoint: String,
     allowed_ips: String,
 ) -> Result<String, String> {
-    let (private_key, public_key) = generate_vpn_keypair().await?;
+    check_wg_installed()?;
+    let (private_key, _public_key) = generate_vpn_keypair().await?;
 
-    let config = format!(r#"[Interface]
+    // Note: peer_name is used for logging/UI context usually, but included in comment here.
+    let config = format!(r#"# Config for {}
+[Interface]
 PrivateKey = {}
 Address = 10.0.0.2/24
 DNS = 1.1.1.1
@@ -80,7 +99,7 @@ PublicKey = {}
 Endpoint = {}
 AllowedIPs = {}
 PersistentKeepalive = 25
-"#, private_key, peer_public_key, peer_endpoint, allowed_ips);
+"#, peer_name, private_key, peer_public_key, peer_endpoint, allowed_ips);
 
     Ok(config)
 }

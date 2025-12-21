@@ -1,5 +1,4 @@
 use tauri::State;
-use std::sync::{Arc, Mutex};
 use serde::{Serialize, Deserialize};
 
 pub struct StorageState {
@@ -26,7 +25,7 @@ pub struct FileDTO {
 }
 
 #[tauri::command]
-pub async fn list_buckets(state: State<'_, StorageState>) -> Result<Vec<BucketDTO>, String> {
+pub async fn list_buckets(_state: State<'_, StorageState>) -> Result<Vec<BucketDTO>, String> {
     // access state securely
     // For demo, return mock or list actual folders in app_data_dir/storage
     Ok(vec![
@@ -48,7 +47,7 @@ pub async fn list_buckets(state: State<'_, StorageState>) -> Result<Vec<BucketDT
 }
 
 #[tauri::command]
-pub async fn create_bucket(state: State<'_, StorageState>, name: String, public: bool) -> Result<BucketDTO, String> {
+pub async fn create_bucket(_state: State<'_, StorageState>, name: String, public: bool) -> Result<BucketDTO, String> {
     Ok(BucketDTO {
         id: "b3".into(),
         name,
@@ -59,12 +58,12 @@ pub async fn create_bucket(state: State<'_, StorageState>, name: String, public:
 }
 
 #[tauri::command]
-pub async fn delete_bucket(state: State<'_, StorageState>, bucket_id: String) -> Result<(), String> {
+pub async fn delete_bucket(_state: State<'_, StorageState>, _bucket_id: String) -> Result<(), String> {
     Ok(())
 }
 
 #[tauri::command]
-pub async fn upload_file(state: State<'_, StorageState>, bucket_id: String, name: String, content: String) -> Result<FileDTO, String> {
+pub async fn upload_file(_state: State<'_, StorageState>, _bucket_id: String, name: String, _content: String) -> Result<FileDTO, String> {
     Ok(FileDTO {
         id: "f2".into(),
         name,
@@ -75,17 +74,17 @@ pub async fn upload_file(state: State<'_, StorageState>, bucket_id: String, name
 }
 
 #[tauri::command]
-pub async fn download_file(state: State<'_, StorageState>, bucket_id: String, file_id: String) -> Result<String, String> {
+pub async fn download_file(_state: State<'_, StorageState>, _bucket_id: String, _file_id: String) -> Result<String, String> {
     Ok("Hello World".into())
 }
 
 #[tauri::command]
-pub async fn delete_file(state: State<'_, StorageState>, bucket_id: String, file_id: String) -> Result<(), String> {
+pub async fn delete_file(_state: State<'_, StorageState>, _bucket_id: String, _file_id: String) -> Result<(), String> {
     Ok(())
 }
 
 #[tauri::command]
-pub async fn list_files(state: State<'_, StorageState>, bucket_id: String) -> Result<Vec<FileDTO>, String> {
+pub async fn list_files(_state: State<'_, StorageState>, _bucket_id: String) -> Result<Vec<FileDTO>, String> {
     Ok(vec![
         FileDTO {
             id: "f1".into(),

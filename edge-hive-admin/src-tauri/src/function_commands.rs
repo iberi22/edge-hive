@@ -198,3 +198,34 @@ pub async fn delete_function(
     Ok(())
 }
 
+#[tauri::command]
+pub async fn rollback_function(
+    state: State<'_, FunctionState>,
+    name: String,
+    version: String,
+) -> Result<FunctionInfo, String> {
+    let func_dir = state.plugins_dir.join(&name);
+    let target_path = func_dir.join(format!("v{}.wasm", version));
+
+    if !target_path.exists() {
+        return Err("Target version not found".into());
+    }
+
+    // Create new version from old one (Roll forward pattern)
+    let new_version = chrono::Utc::now().timestamp().to_string();
+    let new_path = func_dir.join(format!("v{}.wasm", new_version));
+
+    fs::copy(&target_path, &new_path).map_err(|e| e.to_string())?;
+
+    // Update runtime
+    let mut manager = state.manager.lock().map_err(|e| e.to_string())?;
+    manager.unload(&name);
+    manager.load(&new_path).map_err(|e| e.to_string())?;
+
+    Ok(FunctionInfo {
+        id: format!("fn-{}", manager.plugins().len() - 1),
+        name,
+        version: new_version,
+    })
+}
+

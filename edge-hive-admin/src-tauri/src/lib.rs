@@ -146,7 +146,9 @@ pub fn run() {
             function_commands::invoke_function,
             function_commands::deploy_function,
             function_commands::get_function_versions,
+            function_commands::get_function_versions,
             function_commands::delete_function,
+            function_commands::rollback_function,
             // Storage
             storage_commands::list_buckets,
             storage_commands::list_files,

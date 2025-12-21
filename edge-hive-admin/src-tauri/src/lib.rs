@@ -58,9 +58,6 @@ pub fn run() {
         logs: Arc::new(Mutex::new(Vec::new())),
     };
 
-    let function_state = FunctionState {
-        manager: Arc::new(Mutex::new(PluginManager::new())),
-    };
 
 
     tauri::Builder::default()
@@ -68,7 +65,6 @@ pub fn run() {
         .manage(mcp_state)
         .manage(terminal_state)
         .manage(log_state)
-        .manage(function_state)
         .manage(ServerState {
             pid: Mutex::new(None),
         })
@@ -94,6 +90,16 @@ pub fn run() {
                     DatabaseService::new(&db_path).await.expect("Failed to initialize database")
                 });
                 app_handle.manage(DatabaseState::new(db_service));
+
+                // Initialize Function State with Plugins Directory
+                let plugins_dir = parent.join("plugins");
+                let _ = std::fs::create_dir_all(&plugins_dir);
+                let manager = function_commands::load_existing_plugins(&plugins_dir);
+
+                app_handle.manage(FunctionState {
+                    manager: Arc::new(Mutex::new(manager)),
+                    plugins_dir,
+                });
             }
 
             // Initialize Chaos State
@@ -121,8 +127,6 @@ pub fn run() {
             commands::get_peers,
             commands::start_server,
             commands::stop_server,
-            commands::get_cloud_nodes,
-            commands::provision_cloud_node,
             commands::get_system_stats,
             // MCP
             mcp_commands::mcp_handle_request,
@@ -140,6 +144,9 @@ pub fn run() {
             // Functions
             function_commands::list_functions,
             function_commands::invoke_function,
+            function_commands::deploy_function,
+            function_commands::get_function_versions,
+            function_commands::delete_function,
             // Storage
             storage_commands::list_buckets,
             storage_commands::list_files,
@@ -155,8 +162,10 @@ pub fn run() {
             settings_commands::create_backup,
             settings_commands::get_backups,
             // Cloud
-            cloud_commands::get_available_plans,
+            // Cloud
+            cloud_commands::get_instance_sizes,
             cloud_commands::get_cloud_regions,
+            cloud_commands::get_cloud_nodes,
             cloud_commands::provision_cloud_node,
             // Chaos
             chaos_commands::get_experiments,
@@ -170,6 +179,7 @@ pub fn run() {
             auth_commands::get_current_user,
             // Billing
             billing_commands::get_subscription_status,
+            billing_commands::get_available_plans,
             billing_commands::get_usage_metrics,
             billing_commands::create_checkout_session,
             // Cache

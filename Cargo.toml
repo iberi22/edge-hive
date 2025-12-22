@@ -121,7 +121,7 @@ libp2p = { version = "0.54", features = [
 # Tor Integration (Arti - Pure Rust Tor)
 arti-client = "0.20"
 tor-hsservice = "0.20"                                    # Onion Services v3
-tor-rtcompat = { version = "0.20", features = ["tokio"] }
+tor-rtcompat = { version = "0.37", features = ["tokio"] }
 
 # Database
 surrealdb = { version = "2.0", features = ["kv-mem"] }

@@ -14,7 +14,7 @@ thiserror.workspace = true
 tracing.workspace = true
 
 # Tor Hidden Services (Direct implementation)
-tor-hsservice = "0.20"
+tor-hsservice = "0.37"
 tor-rtcompat = { version = "0.37", features = ["tokio"] }
 tor-hscrypto = "0.20"
 ed25519-consensus.workspace = true

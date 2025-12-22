@@ -16,7 +16,7 @@ tracing.workspace = true
 # WASM runtime
 wasmtime = "26"
 wasm-bindgen = "0.2"
-md5 = "0.7"
+md5 = "0.8"
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -74,4 +74,4 @@ predicates = "3.1"
 tempfile.workspace = true
 hyper = "1.8.1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-tokio-tungstenite = "0.24"
+tokio-tungstenite = "0.28"

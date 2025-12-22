@@ -21,7 +21,7 @@ surrealdb = { workspace = true }
 # Async + WebSocket
 futures-util = "0.3"
 tokio = { workspace = true, features = ["full"] }
-tokio-tungstenite = "0.24"
+tokio-tungstenite = "0.28"
 
 # Concurrency
 dashmap = "6"

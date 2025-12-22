@@ -80,7 +80,7 @@ jobs:
         run: cargo build --release -p edge-hive-core
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: edge-hive-linux-x86_64
           path: target/release/edge-hive
@@ -99,7 +99,7 @@ jobs:
         run: cargo build --release -p edge-hive-core
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: edge-hive-windows-x86_64
           path: target/release/edge-hive.exe
@@ -129,7 +129,7 @@ jobs:
           cargo ndk -t arm64-v8a build --release -p edge-hive-core
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: edge-hive-android-arm64
           path: target/aarch64-linux-android/release/edge-hive

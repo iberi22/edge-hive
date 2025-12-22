@@ -149,7 +149,7 @@ data-encoding = "2.6"
 ed25519-consensus = "2"
 which = "6.0"
 sysinfo = "0.37"
-portable-pty = "0.8"
+portable-pty = "0.9"
 base64 = "0.22"
 async-stripe = { version = "0.41", features = ["runtime-tokio-hyper", "webhook-events"] }
 

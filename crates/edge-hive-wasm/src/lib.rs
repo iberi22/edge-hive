@@ -2,9 +2,13 @@
 //!
 //! Provides sandboxed execution of WASM plugins using Wasmtime.
 
-pub mod runtime;
+pub mod function;
+pub mod host;
 pub mod prelude;
+pub mod runtime;
 
+pub use function::EdgeFunction;
+pub use host::{HostContext, LogLevel, NoOpHostContext, SharedHostContext};
 pub use runtime::WasmRuntime;
 
 use serde::{Deserialize, Serialize};
@@ -92,7 +96,7 @@ impl Plugin {
 
     fn get_plugin_info(store: &mut Store<()>, instance: &Instance) -> Result<PluginInfo, WasmError> {
         // Look for an exported `plugin_info` function
-        let func = instance
+        let _func = instance
             .get_func(&mut *store, "plugin_info")
             .ok_or_else(|| WasmError::Call("No plugin_info function".into()))?;
 

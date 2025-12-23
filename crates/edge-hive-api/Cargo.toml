@@ -8,8 +8,8 @@ description = "Unified API Gateway for Edge Hive"
 [dependencies]
 # HTTP Server
 axum = { workspace = true, features = ["ws"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+tower.workspace = true
+tower-http.workspace = true
 tokio = { workspace = true, features = ["full"] }
 
 # Serialization
@@ -28,25 +28,22 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-db = { path = "../edge-hive-db" }
 edge-hive-auth = { path = "../edge-hive-auth" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
-argon2 = "0.5"
-rand = "0.8"
-sha2 = "0.10"
-chrono = { version = "0.4", features = ["serde"] }
+sha2.workspace = true
 
 # Database
-chrono = { version = "0.4", features = ["serde"] }
-surrealdb = { version = "1.0.0-beta.9", features = ["kv-mem"] }
+chrono.workspace = true
+surrealdb.workspace = true
 
 # Password hashing
 argon2 = { version = "0.5", features = ["std"] }
-rand = { version = "0.8", features = ["std", "std_rng"] }
+rand.workspace = true
 
 # Validation
 validator = { version = "0.18", features = ["derive"] }
 
 [dev-dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-tempfile = "3.10"
+chrono.workspace = true
+tempfile.workspace = true
 tokio-test = "0.4"
 http = "1.1"
-tower = { version = "0.5", features = ["util"] }
+tower = { workspace = true, features = ["util"] }

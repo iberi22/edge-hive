@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use crate::oauth2::ClientCredentials;
 use crate::error::{AuthError, Result};
 

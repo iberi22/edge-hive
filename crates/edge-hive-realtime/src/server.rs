@@ -4,7 +4,6 @@ use crate::protocol::{ClientMessage, ServerMessage};
 use anyhow::Result;
 use axum::extract::ws::{Message as AxumMessage, WebSocket};
 use dashmap::DashMap;
-use dashmap::mapref::entry::Entry;
 use futures_util::{SinkExt, StreamExt};
 use std::{
     net::SocketAddr,
@@ -155,6 +154,7 @@ async fn handle_connection(
         let text = msg.to_text()?;
         let parsed: Result<ClientMessage, _> = serde_json::from_str(text);
 
+        match parsed {
             Ok(ClientMessage::Ping) => {
                 let _ = out_tx
                     .send(Message::Text(serde_json::to_string(&ServerMessage::Pong)?.into()));
@@ -184,63 +184,6 @@ async fn handle_connection(
                     tx
                 };
 
-                // If DB is available, ensure a single Live Query pump exists for this topic.
-                if db.is_some() {
-                    match live_tasks.entry(topic.clone()) {
-                        Entry::Occupied(_) => {}
-                        Entry::Vacant(entry) => {
-                            let db = db.clone();
-                            let sender = sender.clone();
-                            let topic_for_task = topic.clone();
-
-                            let handle = tokio::spawn(async move {
-                                let Some(db) = db else {
-                                    return;
-                                };
-                                match db.live_table(&topic_for_task).await {
-                                    Ok(mut stream) => {
-                                        while let Some(notification_result) = stream.next().await {
-                                            let notification = match notification_result {
-                                                Ok(n) => n,
-                                                Err(e) => {
-                                                    warn!(
-                                                        "Live query notification error for topic={}: {}",
-                                                        topic_for_task, e
-                                                    );
-                                                    continue;
-                                                }
-                                            };
-
-                                            let action = match notification.action {
-                                                surrealdb::Action::Create => "create",
-                                                surrealdb::Action::Update => "update",
-                                                surrealdb::Action::Delete => "delete",
-                                                _ => "unknown",
-                                            };
-
-                                            let data = serde_json::to_value(&notification.data)
-                                                .unwrap_or(serde_json::Value::Null);
-
-                                            let _ = sender.send(ServerMessage::Event {
-                                                topic: topic_for_task.clone(),
-                                                action: action.to_string(),
-                                                data,
-                                            });
-                                        }
-                                    }
-                                    Err(e) => {
-                                        warn!(
-                                            "Live query failed for topic={}: {}",
-                                            topic_for_task, e
-                                        );
-                                    }
-                                }
-                            });
-
-                            entry.insert(handle);
-                        }
-                    }
-                }
 
                 let mut rx = sender.subscribe();
                 let out_tx_clone = out_tx.clone();
@@ -382,62 +325,6 @@ async fn handle_axum_connection(
                     tx
                 };
 
-                if db.is_some() {
-                    match live_tasks.entry(topic.clone()) {
-                        Entry::Occupied(_) => {}
-                        Entry::Vacant(entry) => {
-                            let db = db.clone();
-                            let sender = sender.clone();
-                            let topic_for_task = topic.clone();
-
-                            let handle = tokio::spawn(async move {
-                                let Some(db) = db else {
-                                    return;
-                                };
-                                match db.live_table(&topic_for_task).await {
-                                    Ok(mut stream) => {
-                                        while let Some(notification_result) = stream.next().await {
-                                            let notification = match notification_result {
-                                                Ok(n) => n,
-                                                Err(e) => {
-                                                    warn!(
-                                                        "Live query notification error for topic={}: {}",
-                                                        topic_for_task, e
-                                                    );
-                                                    continue;
-                                                }
-                                            };
-
-                                            let action = match notification.action {
-                                                surrealdb::Action::Create => "create",
-                                                surrealdb::Action::Update => "update",
-                                                surrealdb::Action::Delete => "delete",
-                                                _ => "unknown",
-                                            };
-
-                                            let data = serde_json::to_value(&notification.data)
-                                                .unwrap_or(serde_json::Value::Null);
-
-                                            let _ = sender.send(ServerMessage::Event {
-                                                topic: topic_for_task.clone(),
-                                                action: action.to_string(),
-                                                data,
-                                            });
-                                        }
-                                    }
-                                    Err(e) => {
-                                        warn!(
-                                            "Live query failed for topic={}: {}",
-                                            topic_for_task, e
-                                        );
-                                    }
-                                }
-                            });
-
-                            entry.insert(handle);
-                        }
-                    }
-                }
 
                 let mut rx = sender.subscribe();
                 let out_tx_clone = out_tx.clone();

@@ -6,7 +6,7 @@ use axum::{
 };
 use edge_hive_auth::{
     oauth2::{TokenRequest, TokenResponse, ClientCredentials},
-    jwt::{TokenGenerator, JwtClaims},
+    jwt::TokenGenerator,
     client::ClientStore,
     error::AuthError,
 };
@@ -20,6 +20,7 @@ pub struct OAuth2State {
     pub token_generator: Arc<TokenGenerator>,
     pub client_store: Arc<ClientStore>,
     pub jwt_secret: Vec<u8>,
+    pub issuer: String,
     pub clients_file: PathBuf,
 }
 
@@ -38,9 +39,10 @@ impl OAuth2State {
         }
 
         Ok(Self {
-            token_generator: Arc::new(TokenGenerator::new(jwt_secret, issuer)),
+            token_generator: Arc::new(TokenGenerator::new(jwt_secret, issuer.clone())),
             client_store,
             jwt_secret: jwt_secret.to_vec(),
+            issuer,
             clients_file,
         })
     }
@@ -72,25 +74,6 @@ async fn save_clients(store: &ClientStore, clients_file: &Path) -> Result<(), Au
     std::fs::write(clients_file, json)
         .map_err(|e| AuthError::Internal(format!("Failed to write clients file: {e}")))?;
     Ok(())
-}
-
-/// Verify Bearer token and extract claims
-pub fn verify_bearer_token(token: &str, jwt_secret: &[u8]) -> Result<JwtClaims, AuthError> {
-    use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
-
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.validate_exp = true;
-    // Tokens produced by edge_hive_auth::jwt::TokenGenerator set aud="mcp".
-    // jsonwebtoken validates aud by default, so we must set an expected audience.
-    validation.set_audience(&["mcp"]);
-
-    let token_data = decode::<JwtClaims>(
-        token,
-        &DecodingKey::from_secret(jwt_secret),
-        &validation,
-    )?; // JwtError auto-converts to AuthError via #[from]
-
-    Ok(token_data.claims)
 }
 
 /// POST /mcp/auth/token - OAuth2 Client Credentials token endpoint

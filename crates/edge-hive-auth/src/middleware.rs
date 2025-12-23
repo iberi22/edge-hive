@@ -61,7 +61,7 @@ impl AuthLayer {
 
     /// Middleware function to inject validator into request extensions
     pub async fn middleware(
-        mut request: Request,
+        request: Request,
         next: Next,
     ) -> Response {
         // This middleware is applied via tower::ServiceBuilder

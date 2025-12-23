@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::Path;
 use thiserror::Error;
-use zeroize::Zeroize;
 
 /// Errors that can occur during identity operations
 #[derive(Debug, Error)]

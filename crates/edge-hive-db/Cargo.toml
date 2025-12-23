@@ -16,8 +16,8 @@ tracing.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
 argon2 = { version = "0.5", features = ["std"] }
 rand = "0.8"
+futures.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3.10"
-futures.workspace = true

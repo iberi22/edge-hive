@@ -19,8 +19,10 @@ use edge_hive_discovery::{DiscoveryService, PeerInfo};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use crate::auth::{OAuth2State, verify_bearer_token};
+use crate::auth::OAuth2State;
+use edge_hive_auth::{AuthenticatedUser, AuthLayer, TokenValidator};
 use futures::{stream::Stream, StreamExt};
+use tower::ServiceBuilder;
 use std::convert::Infallible;
 use std::time::Duration;
 
@@ -173,24 +175,9 @@ async fn get_messages(
 
 /// SSE streaming endpoint for MCP notifications
 async fn mcp_stream(
-    Extension(oauth_state): Extension<OAuth2State>,
-    request: Request,
-) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, StatusCode> {
-    // Verify Bearer token
-    let auth_header = request.headers()
-        .get(header::AUTHORIZATION)
-        .and_then(|h| h.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    if !auth_header.starts_with("Bearer ") {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    let token = &auth_header[7..];
-    let claims = verify_bearer_token(token, &oauth_state.jwt_secret)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
-
-    let client_id = claims.sub.clone(); // Clone for move into closure
+    user: AuthenticatedUser,
+) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, edge_hive_auth::error::AuthError> {
+    let client_id = user.claims.sub.clone();
     info!("SSE stream established for client: {}", client_id);
 
     // Create SSE stream with keep-alive
@@ -224,23 +211,13 @@ async fn mcp_stream(
 /// MCP tool call endpoint
 async fn mcp_tool_call(
     Extension(state): Extension<AppState>,
-    Extension(oauth_state): Extension<OAuth2State>,
-    headers: axum::http::HeaderMap,
+    user: AuthenticatedUser,
     Json(payload): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    // Verify Bearer token
-    let auth_header = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|h| h.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    if !auth_header.starts_with("Bearer ") {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    let token = &auth_header[7..];
-    verify_bearer_token(token, &oauth_state.jwt_secret)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+) -> Result<Json<serde_json::Value>, edge_hive_auth::error::AuthError> {
+    info!(
+        "MCP tool call from client '{}': {:?}",
+        user.claims.sub, payload
+    );
 
     // Handle tool call based on method
     let method = payload.get("method").and_then(|m| m.as_str()).unwrap_or("");
@@ -375,23 +352,13 @@ async fn mcp_tool_call(
 
 /// MCP resource read endpoint
 async fn mcp_resource_read(
-    Extension(oauth_state): Extension<OAuth2State>,
+    user: AuthenticatedUser,
     Path(resource_uri): Path<String>,
-    headers: axum::http::HeaderMap,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    // Verify Bearer token
-    let auth_header = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|h| h.to_str().ok())
-        .ok_or(StatusCode::UNAUTHORIZED)?;
-
-    if !auth_header.starts_with("Bearer ") {
-        return Err(StatusCode::UNAUTHORIZED);
-    }
-
-    let token = &auth_header[7..];
-    verify_bearer_token(token, &oauth_state.jwt_secret)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+) -> Result<Json<serde_json::Value>, edge_hive_auth::error::AuthError> {
+    info!(
+        "MCP resource read from client '{}': {}",
+        user.claims.sub, resource_uri
+    );
 
     // Handle resource read
     let result = match resource_uri.as_str() {
@@ -422,20 +389,32 @@ async fn mcp_resource_read(
 
 
 /// Build the Axum router
-pub fn build_router() -> Router {
+pub fn build_router(oauth_state: OAuth2State) -> Router {
     // MCP auth routes (no auth required for token endpoint)
     let auth_routes = Router::new()
         .route("/mcp/auth/token", post(crate::auth::token_endpoint))
         .route("/mcp/auth/clients", post(crate::auth::create_client))
         .route("/mcp/auth/clients", get(crate::auth::list_clients))
-        .route("/mcp/auth/clients/:client_id", axum::routing::delete(crate::auth::revoke_client));
+        .route(
+            "/mcp/auth/clients/:client_id",
+            axum::routing::delete(crate::auth::revoke_client),
+        );
 
-    // MCP streaming and tool routes (require OAuth2 Bearer token)
+    // Create a token validator from the OAuth2 state
+    let token_validator =
+        TokenValidator::new(&oauth_state.jwt_secret, oauth_state.issuer.clone());
+
+    // MCP streaming and tool routes (require OAuth2 Bearer token via middleware)
     let mcp_routes = Router::new()
         .route("/mcp/stream", get(mcp_stream))
         .route("/mcp/tools/call", post(mcp_tool_call))
         // Use a wildcard so URIs like `edge-hive://status` (contains `/`) can be passed directly.
-        .route("/mcp/resources/*uri", get(mcp_resource_read));
+        .route("/mcp/resources/*uri", get(mcp_resource_read))
+        .layer(
+            ServiceBuilder::new()
+                .layer(Extension(Arc::new(token_validator)))
+        );
+
 
     // Main API routes
     Router::new()
@@ -484,8 +463,8 @@ pub async fn run(
     let api_state = edge_hive_api::ApiState::new(cache, db, realtime, data_dir.clone());
     let api_router = edge_hive_api::create_router(api_state);
 
-    // MINIMAL TEST - Remove api_router temporarily to isolate issue
-    let app = build_router()
+    // Build router and apply global state
+    let app = build_router(oauth_state.clone())
         .fallback_service(spa_static_service())
         .layer(axum::Extension(state))
         .layer(axum::Extension(oauth_state));

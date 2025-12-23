@@ -20,7 +20,6 @@ edge-hive-mcp.workspace = true
 edge-hive-db.workspace = true
 edge-hive-wasm.workspace = true
 edge-hive-auth.workspace = true
-edge-hive-billing.workspace = true
 edge-hive-cache.workspace = true
 edge-hive-tunnel.workspace = true
 uuid.workspace = true

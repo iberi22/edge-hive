@@ -13,6 +13,7 @@ use surrealdb::engine::local::Mem;
 use surrealdb::Surreal;
 use thiserror::Error;
 use tracing::info;
+use futures::StreamExt;
 
 /// Errors that can occur during database operations
 #[derive(Debug, Error)]
@@ -45,22 +46,6 @@ pub struct StoredPeer {
 pub struct StoredConfig {
     pub key: String,
     pub value: serde_json::Value,
-}
-
-/// User information stored in the database
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoredUser {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub email: String,
-    pub password_hash: String,
-    pub provider: Option<String>,
-    pub provider_id: Option<String>,
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
-    pub created_at: surrealdb::sql::Datetime,
-    pub updated_at: surrealdb::sql::Datetime,
-    pub email_verified: bool,
-    pub role: String,
 }
 
 /// Task information stored in the database
@@ -189,21 +174,6 @@ impl DatabaseService {
             .await?;
 
         // Define sessions table
-<<<<<<< HEAD
-        self.db
-            .query(
-                r#"
-                DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
-                DEFINE FIELD user_id ON sessions TYPE record<users>;
-                DEFINE FIELD refresh_token_hash ON sessions TYPE string;
-                DEFINE FIELD expires_at ON sessions TYPE datetime;
-                DEFINE FIELD created_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE FIELD updated_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
-                "#,
-            )
-            .await?;
-=======
         self.db.query(r#"
             DEFINE TABLE sessions SCHEMAFULL;
             DEFINE FIELD user_id ON sessions TYPE record<users>;
@@ -216,7 +186,6 @@ impl DatabaseService {
             DEFINE INDEX sessions_user ON sessions COLUMNS user_id;
             DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
         "#).await?;
->>>>>>> feat/db-session-storage-7209861675046196892
 
         // Seed initial tasks if table is empty
         let mut count_resp = self.db.query("SELECT count() FROM task GROUP ALL").await?;
@@ -406,15 +375,6 @@ impl DatabaseService {
     }
 
     // Session management
-    pub async fn create_session(
-        &self,
-        session: &session::StoredSession,
-    ) -> Result<session::StoredSession, DbError> {
-        let created: Option<session::StoredSession> =
-            self.db.create("sessions").content(session.clone()).await?;
-        created.ok_or_else(|| DbError::Query("Session creation returned no record".to_string()))
-    }
-
     /// Create a new session
     pub async fn create_session(&self, session: &StoredSession) -> Result<StoredSession, DbError> {
         let created: Option<StoredSession> = self.db.create("sessions").content(session.clone()).await?;

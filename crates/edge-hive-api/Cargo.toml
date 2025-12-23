@@ -33,7 +33,7 @@ sha2 = "0.10"
 # Database
 surrealdb = { workspace = true, features = ["kv-mem"] }
 
-# Password hashing
+# Password hashing and security
 argon2 = { version = "0.5", features = ["std"] }
 rand = { version = "0.8", features = ["std", "std_rng"] }
 chrono = { version = "0.4", features = ["serde"] }

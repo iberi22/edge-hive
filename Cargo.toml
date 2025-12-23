@@ -14,6 +14,7 @@ members = [
     "crates/edge-hive-api",
     "crates/edge-hive-realtime",
     "edge-hive-admin/src-tauri",
+    "examples/edge-functions/hello",
 ]
 
 [workspace.package]

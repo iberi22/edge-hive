@@ -2,6 +2,10 @@
 //!
 //! Provides embedded database functionality with RocksDB backend.
 
+pub mod session;
+pub mod user;
+
+use crate::user::StoredUser;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
 use surrealdb::engine::local::Mem;
@@ -129,6 +133,35 @@ impl DatabaseService {
                 DEFINE FIELD due_date ON task TYPE datetime;
                 DEFINE FIELD created_at ON task TYPE datetime;
                 DEFINE FIELD assignee ON task TYPE option<string>;
+                "#,
+            )
+            .await?;
+
+        // Define users table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS users SCHEMAFULL;
+                DEFINE FIELD email ON users TYPE string;
+                DEFINE FIELD name ON users TYPE option<string>;
+                DEFINE FIELD password_hash ON users TYPE string;
+                DEFINE FIELD created_at ON users TYPE datetime;
+                DEFINE FIELD updated_at ON users TYPE datetime;
+                DEFINE INDEX user_email_idx ON users FIELDS email UNIQUE;
+                "#,
+            )
+            .await?;
+
+        // Define sessions table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
+                DEFINE FIELD user_id ON sessions TYPE record<users>;
+                DEFINE FIELD refresh_token_hash ON sessions TYPE string;
+                DEFINE FIELD expires_at ON sessions TYPE datetime;
+                DEFINE FIELD created_at ON sessions TYPE datetime;
+                DEFINE FIELD updated_at ON sessions TYPE datetime;
                 "#,
             )
             .await?;
@@ -307,6 +340,32 @@ impl DatabaseService {
         table: &str,
     ) -> Result<surrealdb::method::Stream<Vec<LiveRecord>>, DbError> {
         Ok(self.db.select::<Vec<LiveRecord>>(table).live().await?)
+    }
+
+    // User management
+    pub async fn create_user(&self, user: &StoredUser) -> Result<StoredUser, DbError> {
+        let created: Option<StoredUser> = self.db.create("users").content(user.clone()).await?;
+        Ok(created.unwrap())
+    }
+
+    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
+        let mut result = self
+            .db
+            .query("SELECT * FROM users WHERE email = $email")
+            .bind(("email", email.to_string()))
+            .await?;
+        let user: Option<StoredUser> = result.take(0)?;
+        Ok(user)
+    }
+
+    // Session management
+    pub async fn create_session(
+        &self,
+        session: &session::StoredSession,
+    ) -> Result<session::StoredSession, DbError> {
+        let created: Option<session::StoredSession> =
+            self.db.create("sessions").content(session.clone()).await?;
+        Ok(created.unwrap())
     }
 }
 

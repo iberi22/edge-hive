@@ -20,6 +20,7 @@ target/wasm32-unknown-unknown/release/hello_edge_function.wasm
 use edge_hive_wasm::{WasmRuntime, NoOpHostContext};
 use serde_json::json;
 use std::sync::Arc;
+use std::path::Path;
 
 #[tokio::main]
 async fn main() {
@@ -59,9 +60,9 @@ async fn main() {
 
 ## Memory Management
 
-The function implements simple memory management:
-- `allocate(size)` - Allocates memory and returns a pointer
+The function uses `wee_alloc` for efficient memory management in WASM:
+- `allocate(size)` - Allocates memory using the global allocator and returns a pointer
 - `deallocate(ptr, size)` - Deallocates memory
-- `handle_request(req_ptr, req_len)` - Main entry point
+- `handle_request(req_ptr, req_len)` - Main entry point, returns i64 with ptr in lower 32 bits and len in upper 32 bits
 
-The response length is stored at `response_ptr - 4` bytes.
+The response format packs the pointer and length into a single i64 return value for efficient communication between WASM and the host.

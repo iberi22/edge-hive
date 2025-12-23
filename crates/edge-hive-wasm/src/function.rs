@@ -23,7 +23,11 @@ impl<H: HostContext> EdgeFunction<H> {
     /// * `path` - Path to the WASM file
     /// * `host` - Host context for database and logging
     pub fn load(path: &Path, host: Arc<H>) -> Result<Self, WasmError> {
-        let engine = Engine::default();
+        let mut config = Config::new();
+        config.async_support(true);
+        let engine = Engine::new(&config)
+            .map_err(|e| WasmError::Load(e.to_string()))?;
+        
         let module = Module::from_file(&engine, path)
             .map_err(|e| WasmError::Load(e.to_string()))?;
 
@@ -42,7 +46,11 @@ impl<H: HostContext> EdgeFunction<H> {
     pub fn from_bytes(bytes: &[u8], host: Arc<H>) -> Result<Self, WasmError> {
         crate::validate_wasm_bytes(bytes)?;
 
-        let engine = Engine::default();
+        let mut config = Config::new();
+        config.async_support(true);
+        let engine = Engine::new(&config)
+            .map_err(|e| WasmError::Load(e.to_string()))?;
+        
         let module = Module::new(&engine, bytes)
             .map_err(|e| WasmError::Load(e.to_string()))?;
 
@@ -101,24 +109,17 @@ impl<H: HostContext> EdgeFunction<H> {
 
         // Call the handle_request function
         let handle_request = instance
-            .get_typed_func::<(i32, i32), i32>(&mut store, "handle_request")
+            .get_typed_func::<(i32, i32), i64>(&mut store, "handle_request")
             .map_err(|e| WasmError::Call(format!("No 'handle_request' export: {}", e)))?;
 
-        let resp_ptr = handle_request
+        let result = handle_request
             .call_async(&mut store, (req_ptr, req_len))
             .await
             .map_err(|e| WasmError::Call(format!("handle_request failed: {}", e)))?;
 
-        // Read response length (stored at resp_ptr - 4)
-        let resp_len = {
-            let mem_data = memory.data(&store);
-            i32::from_le_bytes([
-                mem_data[resp_ptr as usize - 4],
-                mem_data[resp_ptr as usize - 3],
-                mem_data[resp_ptr as usize - 2],
-                mem_data[resp_ptr as usize - 1],
-            ])
-        };
+        // Unpack ptr and len from i64
+        let resp_ptr = (result & 0xFFFFFFFF) as i32;
+        let resp_len = (result >> 32) as i32;
 
         // Read response data
         let response_json = {

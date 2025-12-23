@@ -1,7 +1,6 @@
 use tauri::State;
 use crate::db_commands::DatabaseState;
 use edge_hive_db::StoredTask;
-use serde_json::Value;
 
 #[tauri::command]
 pub async fn get_tasks(
@@ -11,7 +10,15 @@ pub async fn get_tasks(
 }
 
 #[tauri::command]
-pub async fn save_task(
+pub async fn create_task(
+    state: State<'_, DatabaseState>,
+    task: StoredTask,
+) -> Result<(), String> {
+    state.service.save_task(&task).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_task(
     state: State<'_, DatabaseState>,
     task: StoredTask,
 ) -> Result<(), String> {
@@ -24,4 +31,13 @@ pub async fn delete_task(
     id: String,
 ) -> Result<(), String> {
     state.service.delete_task(&id).await.map_err(|e| e.to_string())
+}
+
+// Keep save_task for backward compatibility
+#[tauri::command]
+pub async fn save_task(
+    state: State<'_, DatabaseState>,
+    task: StoredTask,
+) -> Result<(), String> {
+    state.service.save_task(&task).await.map_err(|e| e.to_string())
 }

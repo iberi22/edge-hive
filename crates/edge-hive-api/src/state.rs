@@ -1,6 +1,10 @@
 //! API Gateway shared state
 
+<<<<<<< HEAD
 use edge_hive_auth::jwt::TokenValidator;
+=======
+use edge_hive_auth::{TokenGenerator, TokenValidator};
+>>>>>>> master
 use edge_hive_cache::CacheService;
 use edge_hive_db::DatabaseService;
 use edge_hive_realtime::{RealtimeServer, RealtimeServerConfig};
@@ -20,44 +24,52 @@ pub struct ApiState {
     /// Real-time WebSocket hub
     pub realtime: RealtimeServer,
 
-    /// JWT token validator
-    pub token_validator: Arc<TokenValidator>,
-
     /// Node data directory (used for loading edge function artifacts)
     pub data_dir: PathBuf,
+
+    /// JWT token generator
+    pub token_generator: Arc<TokenGenerator>,
+
+    /// JWT token validator
+    pub token_validator: Arc<TokenValidator>,
 }
 
 impl ApiState {
     /// Create a new API state
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cache: CacheService,
         db: Arc<DatabaseService>,
         realtime: RealtimeServer,
-        token_validator: Arc<TokenValidator>,
         data_dir: PathBuf,
+        token_generator: TokenGenerator,
+        token_validator: TokenValidator,
     ) -> Self {
         Self {
             cache: Arc::new(Mutex::new(cache)),
             db,
             realtime,
-            token_validator,
             data_dir,
+            token_generator: Arc::new(token_generator),
+            token_validator: Arc::new(token_validator),
         }
     }
 
     /// Convenience constructor for tests / minimal setups.
-    pub fn new_minimal(
-        cache: CacheService,
-        db: Arc<DatabaseService>,
-        token_validator: Arc<TokenValidator>,
-        data_dir: PathBuf,
-    ) -> Self {
+    pub fn new_minimal(cache: CacheService, db: Arc<DatabaseService>, data_dir: PathBuf) -> Self {
+        let token_secret = "some-secret-for-testing";
+        let token_generator =
+            TokenGenerator::new(token_secret.as_bytes(), "edge-hive-test".to_string());
+        let token_validator =
+            TokenValidator::new(token_secret.as_bytes(), "edge-hive-test".to_string());
+
         Self::new(
             cache,
             db.clone(),
             RealtimeServer::new(RealtimeServerConfig::default()).with_db(db),
-            token_validator,
             data_dir,
+            token_generator,
+            token_validator,
         )
     }
 }

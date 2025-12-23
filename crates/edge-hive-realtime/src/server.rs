@@ -155,11 +155,9 @@ async fn handle_connection(
         let text = msg.to_text()?;
         let parsed: Result<ClientMessage, _> = serde_json::from_str(text);
 
-        match parsed {
             Ok(ClientMessage::Ping) => {
-                let _ = out_tx.send(Message::Text(
-                    serde_json::to_string(&ServerMessage::Pong)?.into(),
-                ));
+                let _ = out_tx
+                    .send(Message::Text(serde_json::to_string(&ServerMessage::Pong)?.into()));
             }
             Ok(ClientMessage::Subscribe { topic, filter: _ }) => {
                 if subs.len() >= max_subs {
@@ -356,7 +354,7 @@ async fn handle_axum_connection(
         match parsed {
             Ok(ClientMessage::Ping) => {
                 let _ = out_tx.send(AxumMessage::Text(
-                    serde_json::to_string(&ServerMessage::Pong)?,
+                    serde_json::to_string(&ServerMessage::Pong)?.into(),
                 ));
             }
             Ok(ClientMessage::Subscribe { topic, filter: _ }) => {
@@ -364,7 +362,7 @@ async fn handle_axum_connection(
                     let err = ServerMessage::Error {
                         message: format!("Too many subscriptions (max {max_subs})"),
                     };
-                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&err)?));
+                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&err)?.into()));
                     continue;
                 }
 
@@ -372,7 +370,7 @@ async fn handle_axum_connection(
                     let ack = ServerMessage::Ack {
                         message: format!("Already subscribed: {topic}"),
                     };
-                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?));
+                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?.into()));
                     continue;
                 }
 
@@ -450,7 +448,10 @@ async fn handle_axum_connection(
                         match rx.recv().await {
                             Ok(event) => {
                                 if let Ok(text) = serde_json::to_string(&event) {
-                                    if out_tx_clone.send(AxumMessage::Text(text)).is_err() {
+                                    if out_tx_clone
+                                        .send(AxumMessage::Text(text.into()))
+                                        .is_err()
+                                    {
                                         break;
                                     }
                                 }
@@ -467,7 +468,7 @@ async fn handle_axum_connection(
                 let ack = ServerMessage::Ack {
                     message: format!("Subscribed: {topic}"),
                 };
-                let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?));
+                let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?.into()));
             }
             Ok(ClientMessage::Unsubscribe { topic }) => {
                 if let Some((_, handle)) = subs.remove(&topic) {
@@ -475,19 +476,19 @@ async fn handle_axum_connection(
                     let ack = ServerMessage::Ack {
                         message: format!("Unsubscribed: {topic}"),
                     };
-                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?));
+                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?.into()));
                 } else {
                     let ack = ServerMessage::Ack {
                         message: format!("Not subscribed: {topic}"),
                     };
-                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?));
+                    let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&ack)?.into()));
                 }
             }
             Err(e) => {
                 let err = ServerMessage::Error {
                     message: format!("Invalid message: {e}"),
                 };
-                let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&err)?));
+                let _ = out_tx.send(AxumMessage::Text(serde_json::to_string(&err)?.into()));
             }
         }
     }

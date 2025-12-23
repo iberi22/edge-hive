@@ -47,22 +47,6 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
-/// User information stored in the database
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoredUser {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub email: String,
-    pub password_hash: String,
-    pub provider: Option<String>,
-    pub provider_id: Option<String>,
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
-    pub created_at: surrealdb::sql::Datetime,
-    pub updated_at: surrealdb::sql::Datetime,
-    pub email_verified: bool,
-    pub role: String,
-}
-
 /// Task information stored in the database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredTask {
@@ -189,23 +173,8 @@ impl DatabaseService {
             .await?;
 
         // Define sessions table
-<<<<<<< HEAD
-        self.db
-            .query(
-                r#"
-                DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
-                DEFINE FIELD user_id ON sessions TYPE record<users>;
-                DEFINE FIELD refresh_token_hash ON sessions TYPE string;
-                DEFINE FIELD expires_at ON sessions TYPE datetime;
-                DEFINE FIELD created_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE FIELD updated_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
-                "#,
-            )
-            .await?;
-=======
         self.db.query(r#"
-            DEFINE TABLE sessions SCHEMAFULL;
+            DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
             DEFINE FIELD user_id ON sessions TYPE record<users>;
             DEFINE FIELD refresh_token_hash ON sessions TYPE string;
             DEFINE FIELD device_info ON sessions TYPE option<string>;
@@ -216,7 +185,6 @@ impl DatabaseService {
             DEFINE INDEX sessions_user ON sessions COLUMNS user_id;
             DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
         "#).await?;
->>>>>>> feat/db-session-storage-7209861675046196892
 
         // Seed initial tasks if table is empty
         let mut count_resp = self.db.query("SELECT count() FROM task GROUP ALL").await?;
@@ -415,12 +383,6 @@ impl DatabaseService {
         created.ok_or_else(|| DbError::Query("Session creation returned no record".to_string()))
     }
 
-    /// Create a new session
-    pub async fn create_session(&self, session: &StoredSession) -> Result<StoredSession, DbError> {
-        let created: Option<StoredSession> = self.db.create("sessions").content(session.clone()).await?;
-        created.ok_or(DbError::Query("Failed to create session".into()))
-    }
-
     /// Get a session by refresh token hash
     pub async fn get_session_by_token(
         &self,
@@ -467,6 +429,22 @@ impl DatabaseService {
             .await?;
         let deleted_sessions: Vec<StoredSession> = result.take(0)?;
         Ok(deleted_sessions.len() as u64)
+    }
+
+    // Execute a raw JSON query and return the JSON response
+    pub async fn query_json(&self, query: &str) -> Result<Vec<serde_json::Value>, DbError> {
+        let mut result = self.db.query(query).await?;
+        let values: Vec<serde_json::Value> = result.take(0)?;
+        Ok(values)
+    }
+
+    /// Subscribe to a live query stream for a table.
+    pub async fn live_table(
+        &self,
+        table: &str,
+    ) -> Result<impl futures::Stream<Item = Result<surrealdb::Notification<LiveRecord>, surrealdb::Error>>, DbError> {
+        let stream = self.db.select(table).live().await?;
+        Ok(stream)
     }
 }
 
@@ -550,14 +528,9 @@ mod tests {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         let created_user = db.create_user(&user).await.unwrap();
@@ -578,28 +551,18 @@ mod tests {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash1".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         let user2 = StoredUser {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash2".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         db.create_user(&user1).await.unwrap();

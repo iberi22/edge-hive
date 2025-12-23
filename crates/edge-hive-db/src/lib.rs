@@ -189,23 +189,8 @@ impl DatabaseService {
             .await?;
 
         // Define sessions table
-<<<<<<< HEAD
-        self.db
-            .query(
-                r#"
-                DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
-                DEFINE FIELD user_id ON sessions TYPE record<users>;
-                DEFINE FIELD refresh_token_hash ON sessions TYPE string;
-                DEFINE FIELD expires_at ON sessions TYPE datetime;
-                DEFINE FIELD created_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE FIELD updated_at ON sessions TYPE datetime DEFAULT time::now();
-                DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
-                "#,
-            )
-            .await?;
-=======
         self.db.query(r#"
-            DEFINE TABLE sessions SCHEMAFULL;
+            DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
             DEFINE FIELD user_id ON sessions TYPE record<users>;
             DEFINE FIELD refresh_token_hash ON sessions TYPE string;
             DEFINE FIELD device_info ON sessions TYPE option<string>;
@@ -216,7 +201,6 @@ impl DatabaseService {
             DEFINE INDEX sessions_user ON sessions COLUMNS user_id;
             DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
         "#).await?;
->>>>>>> feat/db-session-storage-7209861675046196892
 
         // Seed initial tasks if table is empty
         let mut count_resp = self.db.query("SELECT count() FROM task GROUP ALL").await?;
@@ -403,16 +387,6 @@ impl DatabaseService {
     pub async fn delete_user(&self, id: &str) -> Result<(), DbError> {
         let _: Option<StoredUser> = self.db.delete(("users", id)).await?;
         Ok(())
-    }
-
-    // Session management
-    pub async fn create_session(
-        &self,
-        session: &session::StoredSession,
-    ) -> Result<session::StoredSession, DbError> {
-        let created: Option<session::StoredSession> =
-            self.db.create("sessions").content(session.clone()).await?;
-        created.ok_or_else(|| DbError::Query("Session creation returned no record".to_string()))
     }
 
     /// Create a new session

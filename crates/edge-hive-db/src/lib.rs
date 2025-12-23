@@ -55,6 +55,23 @@ pub struct StoredTask {
     pub assignee: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredUser {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<surrealdb::sql::Thing>,
+    pub email: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_hash: Option<String>,
+    pub name: Option<String>,
+    pub provider: Option<String>,
+    pub role: String,
+    pub created_at: surrealdb::sql::Datetime,
+    pub updated_at: surrealdb::sql::Datetime,
+    pub last_login: Option<surrealdb::sql::Datetime>,
+    pub email_verified: bool,
+}
+
+
 /// Database service for Edge Hive
 pub struct DatabaseService {
     db: Surreal<surrealdb::engine::local::Db>,
@@ -129,6 +146,25 @@ impl DatabaseService {
                 DEFINE FIELD due_date ON task TYPE datetime;
                 DEFINE FIELD created_at ON task TYPE datetime;
                 DEFINE FIELD assignee ON task TYPE option<string>;
+                "#,
+            )
+            .await?;
+
+        // Define user table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
+                DEFINE FIELD email ON user TYPE string;
+                DEFINE FIELD password_hash ON user TYPE option<string>;
+                DEFINE FIELD name ON user TYPE option<string>;
+                DEFINE FIELD provider ON user TYPE option<string>;
+                DEFINE FIELD role ON user TYPE string;
+                DEFINE FIELD created_at ON user TYPE datetime;
+                DEFINE FIELD updated_at ON user TYPE datetime;
+                DEFINE FIELD last_login ON user TYPE option<datetime>;
+                DEFINE FIELD email_verified ON user TYPE bool;
+                DEFINE INDEX email_idx ON user FIELDS email UNIQUE;
                 "#,
             )
             .await?;
@@ -262,6 +298,25 @@ impl DatabaseService {
     pub async fn delete_task(&self, id: &str) -> Result<(), DbError> {
         let _: Option<StoredTask> = self.db.delete(("task", id)).await?;
         Ok(())
+    }
+
+    /// Create a new user
+    pub async fn create_user(&self, user: &StoredUser) -> Result<StoredUser, DbError> {
+        let created: StoredUser = self.db
+            .create("user")
+            .content(user)
+            .await?;
+        Ok(created)
+    }
+
+    /// Get a user by email
+    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
+        let mut result = self.db
+            .query("SELECT * FROM user WHERE email = $email")
+            .bind(("email", email))
+            .await?;
+        let user: Option<StoredUser> = result.take(0)?;
+        Ok(user)
     }
 
     /// Execute a raw SurrealQL query

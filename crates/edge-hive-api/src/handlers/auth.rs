@@ -1,12 +1,58 @@
 //! Authentication handlers
 
+use argon2::{Argon2, PasswordHasher, password_hash::{PasswordHash, SaltString}};
 use axum::{
     extract::Extension,
     http::StatusCode,
     response::Json,
 };
+use edge_hive_db::StoredUser;
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use validator::Validate;
+
 use crate::state::ApiState;
+
+
+#[derive(Debug, Error)]
+pub enum AuthError {
+    #[error("Internal server error")]
+    InternalError,
+    #[error("Database error: {0}")]
+    DatabaseError(#[from] surrealdb::Error),
+}
+
+impl From<AuthError> for (StatusCode, Json<ErrorResponse>) {
+    fn from(err: AuthError) -> Self {
+        let status = match err {
+            AuthError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (status, Json(ErrorResponse { error: err.to_string() }))
+    }
+}
+
+#[derive(Deserialize, Validate)]
+pub struct RegisterRequest {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 8))]
+    pub password: String,
+    pub name: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RegisterResponse {
+    pub user_id: String,
+    pub email: String,
+    pub message: String,
+}
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub error: String,
+}
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -56,4 +102,54 @@ pub async fn refresh_token(
 pub async fn logout(Extension(_state): Extension<ApiState>) -> StatusCode {
     // Placeholder: would invalidate session
     StatusCode::OK
+}
+
+/// Register a new user
+pub async fn register(
+    Extension(state): Extension<ApiState>,
+    Json(payload): Json<RegisterRequest>,
+) -> Result<Json<RegisterResponse>, (StatusCode, Json<ErrorResponse>)> {
+    if let Err(e) = payload.validate() {
+        return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse {
+            error: e.to_string(),
+        })));
+    }
+
+    if state.db.get_user_by_email(&payload.email).await.map_err(AuthError::from)?.is_some() {
+        return Err((StatusCode::CONFLICT, Json(ErrorResponse {
+            error: "Email already registered".into()
+        })));
+    }
+
+    let password_hash = hash_password(&payload.password)?;
+
+    let user = StoredUser {
+        id: None,
+        email: payload.email.clone(),
+        password_hash: Some(password_hash),
+        name: payload.name,
+        provider: Some("local".into()),
+        role: "user".into(),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+        last_login: None,
+        email_verified: false,
+    };
+
+    let created = state.db.create_user(&user).await.map_err(AuthError::from)?;
+
+    Ok(Json(RegisterResponse {
+        user_id: created.id.unwrap().to_string(),
+        email: payload.email,
+        message: "User registered successfully".into(),
+    }))
+}
+
+fn hash_password(password: &str) -> Result<String, AuthError> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let hash = argon2.hash_password(password.as_bytes(), &salt)
+        .map_err(|_| AuthError::InternalError)?
+        .to_string();
+    Ok(hash)
 }

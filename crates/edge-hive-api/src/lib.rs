@@ -32,7 +32,7 @@ use tower_http::{
 };
 use tracing::info;
 
-mod handlers;
+pub mod handlers;
 mod middleware;
 mod state;
 
@@ -56,6 +56,7 @@ pub fn create_router(state: ApiState) -> Router {
 
     // Auth routes
     let auth_routes = Router::new()
+        .route("/api/v1/auth/register", post(handlers::auth::register))
         .route("/api/v1/auth/login", post(handlers::auth::login))
         .route("/api/v1/auth/refresh", post(handlers::auth::refresh_token))
         .route("/api/v1/auth/logout", get(handlers::auth::logout));

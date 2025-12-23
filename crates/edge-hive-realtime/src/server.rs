@@ -155,6 +155,7 @@ async fn handle_connection(
         let text = msg.to_text()?;
         let parsed: Result<ClientMessage, _> = serde_json::from_str(text);
 
+        match parsed {
             Ok(ClientMessage::Ping) => {
                 let _ = out_tx
                     .send(Message::Text(serde_json::to_string(&ServerMessage::Pong)?.into()));
@@ -198,7 +199,8 @@ async fn handle_connection(
                                     return;
                                 };
                                 match db.live_table(&topic_for_task).await {
-                                    Ok(mut stream) => {
+                                    Ok(stream) => {
+                                        let mut stream = Box::pin(stream);
                                         while let Some(notification_result) = stream.next().await {
                                             let notification = match notification_result {
                                                 Ok(n) => n,
@@ -395,7 +397,8 @@ async fn handle_axum_connection(
                                     return;
                                 };
                                 match db.live_table(&topic_for_task).await {
-                                    Ok(mut stream) => {
+                                    Ok(stream) => {
+                                        let mut stream = Box::pin(stream);
                                         while let Some(notification_result) = stream.next().await {
                                             let notification = match notification_result {
                                                 Ok(n) => n,

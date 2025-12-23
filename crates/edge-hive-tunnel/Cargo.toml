@@ -12,10 +12,10 @@ serde.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-
+arti-client.workspace = true
 # Tor Hidden Services (Direct implementation)
-tor-hsservice = "0.37"
-tor-rtcompat = { version = "0.37", features = ["tokio"] }
+tor-hsservice.workspace = true
+tor-rtcompat.workspace = true
 tor-hscrypto = "0.37"
 ed25519-consensus.workspace = true
 directories.workspace = true

@@ -23,6 +23,7 @@ edge-hive-auth.workspace = true
 edge-hive-billing.workspace = true
 edge-hive-cache.workspace = true
 edge-hive-tunnel.workspace = true
+surrealdb.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 rand.workspace = true

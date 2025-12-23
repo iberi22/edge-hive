@@ -20,11 +20,8 @@ pub async fn db_query(
     state: State<'_, DatabaseState>,
     sql: String,
 ) -> Result<Vec<Value>, String> {
-    state
-        .service
-        .query_json(&sql)
-        .await
-        .map_err(|e| e.to_string())
+    let mut result = state.service.query(&sql).await.map_err(|e| e.to_string())?;
+    result.take(0).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

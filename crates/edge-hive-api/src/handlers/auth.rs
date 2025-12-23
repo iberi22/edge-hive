@@ -3,7 +3,7 @@
 use crate::state::ApiState;
 use axum::{extract::Extension, http::StatusCode, response::Json};
 use chrono::{Duration, Utc};
-use edge_hive_db::session::StoredSession;
+use edge_hive_db::StoredSession;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -109,7 +109,9 @@ pub async fn login(
                 refresh_token_hash: hash_token(&refresh_token),
                 expires_at: (Utc::now() + Duration::days(30)).into(),
                 created_at: Utc::now().into(),
-                updated_at: Utc::now().into(),
+                device_info: None,
+                ip_address: None,
+                revoked: false,
             };
             state.db.create_session(&session).await.map_err(|_| {
                 (

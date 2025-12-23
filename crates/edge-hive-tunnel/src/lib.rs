@@ -1,7 +1,6 @@
 //! Edge Hive Tunnel - Cloudflare and Tor tunneling support
 //!
 //! Exposes local services to the internet via Cloudflare Tunnel or Tor onion services.
-
 pub mod tor;
 
 use serde::{Deserialize, Serialize};
@@ -9,6 +8,7 @@ use std::process::Stdio;
 use thiserror::Error;
 use tokio::process::{Child, Command};
 use tracing::{info, warn};
+use tor::{TorConfig, TorNode};
 
 /// Errors that can occur during tunnel operations
 #[derive(Debug, Error)]
@@ -21,6 +21,9 @@ pub enum TunnelError {
 
     #[error("Tunnel process error: {0}")]
     Process(#[from] std::io::Error),
+
+    #[error("Tor service error: {0}")]
+    Tor(#[from] anyhow::Error),
 }
 
 /// Tunnel backend type
@@ -36,6 +39,7 @@ pub enum TunnelBackend {
 
 /// Tunnel service for exposing local ports to the internet
 pub struct TunnelService {
+    tor_node: Option<TorNode>,
     backend: TunnelBackend,
     process: Option<Child>,
     public_url: Option<String>,
@@ -46,6 +50,7 @@ impl TunnelService {
     pub fn new(backend: TunnelBackend) -> Self {
         Self {
             backend,
+            tor_node: None,
             process: None,
             public_url: None,
         }
@@ -67,8 +72,7 @@ impl TunnelService {
                 self.start_cloudflared_quick(local_port).await
             }
             TunnelBackend::Tor => {
-                // TODO: Implement Tor in v1.1
-                Err(TunnelError::NotAvailable("Tor support coming in v1.1".into()))
+                self.start_tor_service(local_port).await
             }
         }
     }
@@ -104,6 +108,15 @@ impl TunnelService {
         Ok(self.public_url.clone().unwrap())
     }
 
+    async fn start_tor_service(&mut self, local_port: u16) -> Result<String, TunnelError> {
+        info!("🧅 Starting Tor onion service for port {}", local_port);
+        let tor_config = TorConfig::default()?.with_local_port(local_port);
+        let mut tor_node = TorNode::new(tor_config);
+        let onion_address = tor_node.start().await?;
+        self.tor_node = Some(tor_node);
+        self.public_url = Some(format!("{}.onion", onion_address));
+        Ok(onion_address)
+    }
     async fn start_cloudflared_quick(&mut self, local_port: u16) -> Result<String, TunnelError> {
         if !Self::cloudflared_available() {
             return Err(TunnelError::NotAvailable(
@@ -146,12 +159,16 @@ impl TunnelService {
 
     /// Check if tunnel is running
     pub fn is_running(&self) -> bool {
-        self.process.is_some()
+        self.process.is_some() || self.tor_node.is_some()
     }
 
     /// Stop the tunnel
     pub async fn stop(&mut self) -> Result<(), TunnelError> {
         if let Some(mut process) = self.process.take() {
+            info!("🛑 Stopping cloudflared tunnel");
+            process.kill().await?;
+            self.public_url = None;
+        } else if let Some(mut process) = self.process.take() {
             info!("🛑 Stopping tunnel");
             process.kill().await?;
             self.public_url = None;
@@ -162,7 +179,9 @@ impl TunnelService {
 
 impl Drop for TunnelService {
     fn drop(&mut self) {
-        if let Some(mut process) = self.process.take() {
+        if self.tor_node.is_some() {
+            info!("🛑 Tor service stopping on drop");
+        } else if let Some(mut process) = self.process.take() {
             // Best effort to kill the process
             let _ = process.start_kill();
         }

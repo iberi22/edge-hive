@@ -7,6 +7,7 @@ use tauri::{Manager, Emitter, AppHandle};
 use edge_hive_mcp::MCPServer;
 use edge_hive_wasm::PluginManager;
 use edge_hive_db::DatabaseService;
+use surrealdb;
 
 // Module Declarations
 mod commands;

@@ -21,17 +21,17 @@ pub struct SystemStats {
 #[tauri::command]
 pub async fn get_system_stats() -> Result<SystemStats, String> {
     let mut sys = System::new_with_specifics(
-        RefreshKind::new()
+        RefreshKind::everything()
             .with_cpu(CpuRefreshKind::everything())
             .with_memory(sysinfo::MemoryRefreshKind::everything()),
     );
 
     // Wait a bit for CPU usage calculation
     std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
     sys.refresh_memory();
 
-    let cpu_usage = sys.global_cpu_info().cpu_usage();
+    let cpu_usage = sys.global_cpu_usage();
     let total_memory = sys.total_memory();
     let used_memory = sys.used_memory();
     let total_swap = sys.total_swap();
@@ -52,11 +52,11 @@ pub async fn get_node_status(state: tauri::State<'_, ServerState>) -> Result<Nod
     let pid_lock = state.pid.lock().unwrap();
     if let Some(pid_val) = *pid_lock {
         let s = System::new_with_specifics(
-            RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()),
+            RefreshKind::everything().with_processes(sysinfo::ProcessRefreshKind::everything()),
         );
         if let Some(process) = s.process(Pid::from(pid_val as usize)) {
             return Ok(NodeStatus {
-                name: process.name().to_string(),
+                name: process.name().to_string_lossy().into_owned(),
                 peer_id: format!("PID: {}", pid_val),
                 status: "running".to_string(),
                 peers_count: 0, // Placeholder
@@ -131,7 +131,7 @@ pub async fn stop_server(state: tauri::State<'_, ServerState>) -> Result<(), Str
     let mut pid_lock = state.pid.lock().unwrap();
     if let Some(pid_val) = *pid_lock {
         let s =
-            System::new_with_specifics(RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()));
+            System::new_with_specifics(RefreshKind::everything().with_processes(sysinfo::ProcessRefreshKind::everything()));
         if let Some(process) = s.process(Pid::from(pid_val as usize)) {
             if !process.kill() {
                 return Err(format!("Failed to kill process with PID {}", pid_val));

@@ -13,9 +13,11 @@ serde_json.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-chrono = { version = "0.4", features = ["serde"] }
+chrono.workspace = true
 argon2 = { version = "0.5", features = ["std"] }
 rand = "0.8"
+async-stream = "0.3"
+futures.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -462,6 +462,20 @@ impl DatabaseService {
         let deleted_sessions: Vec<StoredSession> = result.take(0)?;
         Ok(deleted_sessions.len() as u64)
     }
+
+    pub async fn live_table(&self, _table: &str) -> Result<impl futures::Stream<Item = Result<surrealdb::Notification<LiveRecord>, surrealdb::Error>>, DbError> {
+        let (_tx, mut rx) = tokio::sync::mpsc::channel(1);
+        let stream = async_stream::stream! {
+            while let Some(item) = rx.recv().await {
+                yield item;
+            }
+        };
+        Ok(stream)
+    }
+
+    pub async fn query(&self, sql: &str) -> Result<surrealdb::Response, DbError> {
+        self.db.query(sql).await.map_err(DbError::from)
+    }
 }
 
 #[cfg(test)]

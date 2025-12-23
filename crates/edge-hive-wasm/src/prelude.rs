@@ -1,7 +1,6 @@
 /// Prelude for edge function development
 pub use serde::{Deserialize, Serialize};
 pub use serde_json::{json, Value};
-pub use wasm_bindgen::prelude::*;
 
 /// HTTP Request representation
 #[derive(Debug, Clone, Serialize, Deserialize)]

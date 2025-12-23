@@ -28,9 +28,11 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-db = { path = "../edge-hive-db" }
 edge-hive-auth = { path = "../edge-hive-auth" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
+edge-hive-wasm = { path = "../edge-hive-wasm" }
 
 [dev-dependencies]
 tempfile = "3.10"
 tokio-test = "0.4"
 http = "1.1"
 tower = { version = "0.5", features = ["util"] }
+wat = "1.0"

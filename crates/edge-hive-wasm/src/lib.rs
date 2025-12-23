@@ -63,20 +63,22 @@ impl Plugin {
     /// Load a plugin from a WASM file
     pub fn load(path: &Path) -> Result<Self, WasmError> {
         info!("🔌 Loading plugin from {:?}", path);
+        let bytes = std::fs::read(path).map_err(|e| WasmError::Load(e.to_string()))?;
+        Self::load_from_bytes(&bytes, path.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown"))
+    }
 
+    /// Load a plugin from a byte slice
+    pub fn load_from_bytes(bytes: &[u8], name: &str) -> Result<Self, WasmError> {
         let engine = Engine::default();
         let mut store = Store::new(&engine, ());
 
-        let module = Module::from_file(&engine, path)?;
+        let module = Module::from_binary(&engine, bytes)?;
         let instance = Instance::new(&mut store, &module, &[])?;
 
         // Try to get plugin info from exported function
         let info = Self::get_plugin_info(&mut store, &instance)
             .unwrap_or_else(|_| PluginInfo {
-                name: path.file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("unknown")
-                    .to_string(),
+                name: name.to_string(),
                 version: "0.0.0".into(),
                 description: "No description".into(),
                 author: None,
@@ -135,6 +137,14 @@ impl PluginManager {
     /// Load a plugin from a file
     pub fn load(&mut self, path: &Path) -> Result<usize, WasmError> {
         let plugin = Plugin::load(path)?;
+        let index = self.plugins.len();
+        self.plugins.push(plugin);
+        Ok(index)
+    }
+
+    /// Load a plugin from a byte slice
+    pub fn load_from_bytes(&mut self, bytes: &[u8], name: &str) -> Result<usize, WasmError> {
+        let plugin = Plugin::load_from_bytes(bytes, name)?;
         let index = self.plugins.len();
         self.plugins.push(plugin);
         Ok(index)

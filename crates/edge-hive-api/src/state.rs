@@ -3,6 +3,7 @@
 use edge_hive_cache::CacheService;
 use edge_hive_realtime::{RealtimeServer, RealtimeServerConfig};
 use edge_hive_db::DatabaseService;
+use edge_hive_wasm::PluginManager;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -21,6 +22,9 @@ pub struct ApiState {
 
     /// Node data directory (used for loading edge function artifacts)
     pub data_dir: PathBuf,
+
+    // Edge function plugin manager
+    pub plugin_manager: Option<Arc<Mutex<PluginManager>>>,
 }
 
 impl ApiState {
@@ -30,12 +34,14 @@ impl ApiState {
         db: Arc<DatabaseService>,
         realtime: RealtimeServer,
         data_dir: PathBuf,
+        plugin_manager: Option<Arc<Mutex<PluginManager>>>,
     ) -> Self {
         Self {
             cache: Arc::new(Mutex::new(cache)),
             db,
             realtime,
             data_dir,
+            plugin_manager,
         }
     }
 
@@ -46,6 +52,7 @@ impl ApiState {
             db.clone(),
             RealtimeServer::new(RealtimeServerConfig::default()).with_db(db),
             data_dir,
+            None,
         )
     }
 }

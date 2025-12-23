@@ -11,12 +11,14 @@ serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
+tracing = { workspace = true, features = ["log"] }
+futures = "0.3"
 
 # WASM runtime
 wasmtime = "26"
-wasm-bindgen = "0.2"
-md5 = "0.8"
+
+edge-hive-db = { path = "../edge-hive-db" }
 
 [dev-dependencies]
-tokio-test = "0.4"
+tokio = { workspace = true, features = ["macros"] }
+wat = "1.0"

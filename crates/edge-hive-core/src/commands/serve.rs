@@ -28,6 +28,10 @@ pub struct ServeArgs {
     #[arg(long)]
     pub tunnel: bool,
 
+    /// Enable Tor onion service
+    #[arg(long)]
+    pub tor: bool,
+
     /// Enable discovery service
     #[arg(long)]
     pub discovery: bool,
@@ -171,7 +175,7 @@ pub async fn run(
 
     // Initialize tunnel service
     let tunnel = if args.tunnel {
-        info!("🚇 Starting tunnel service...");
+        info!("🚇 Starting Cloudflare tunnel service...");
         let mut tunnel = TunnelService::new(TunnelBackend::Cloudflared);
 
         match tunnel.start_quick(args.port).await {
@@ -185,8 +189,23 @@ pub async fn run(
                 None
             }
         }
+    } else if args.tor {
+        info!("🧅 Starting Tor onion service...");
+        let mut tunnel = TunnelService::new(TunnelBackend::Tor);
+
+        match tunnel.start_quick(args.port).await {
+            Ok(url) => {
+                println!("✅ Onion Service: http://{}.onion", url);
+                Some(tunnel)
+            }
+            Err(e) => {
+                warn!("Failed to start onion service: {}", e);
+                println!("⚠️  Onion Service: Failed ({})", e);
+                None
+            }
+        }
     } else {
-        println!("⏸️  Tunnel: Disabled (use --tunnel to enable)");
+        println!("⏸️  Tunnel: Disabled (use --tunnel or --tor to enable)");
         None
     };
 

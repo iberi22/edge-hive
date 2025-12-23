@@ -6,14 +6,14 @@
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
 use std::path::{PathBuf};
-use std::net::SocketAddr;
-use tracing::{info, warn};
+use tracing::{info};
 
 mod bootstrap;
 mod onion;
 
 pub use bootstrap::TorBootstrap;
 pub use onion::OnionService;
+use tor_rtcompat::PreferredRuntime;
 
 /// Configuration for Tor integration
 #[derive(Debug, Clone)]
@@ -62,24 +62,26 @@ impl TorConfig {
     }
 }
 
-/// Main Tor node manager
-pub struct TorNode {
+/// Main Tor service manager
+pub struct TorService {
     config: TorConfig,
     onion_address: Option<String>,
+    shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
-impl TorNode {
-    /// Create a new Tor node with the given configuration
+impl TorService {
+    /// Create a new Tor service with the given configuration
     pub fn new(config: TorConfig) -> Self {
         Self {
             config,
             onion_address: None,
+            shutdown_tx: None,
         }
     }
 
     /// Bootstrap Tor and launch onion service
     pub async fn start(&mut self) -> Result<String> {
-        info!("Starting Tor node...");
+        info!("Starting Tor service...");
 
         // Ensure data directory exists
         std::fs::create_dir_all(&self.config.data_dir)
@@ -87,14 +89,22 @@ impl TorNode {
 
         // Bootstrap Tor connection
         let bootstrap = TorBootstrap::new(self.config.clone());
-        bootstrap.connect().await?;
+        let tor_client = bootstrap.connect().await?;
 
         // Launch onion service
-        let onion = OnionService::new(self.config.clone());
+        let onion = OnionService::new(self.config.clone(), tor_client);
         let onion_address = onion.launch().await?;
 
         info!("🧅 Onion service running: http://{}.onion", onion_address);
         self.onion_address = Some(onion_address.clone());
+
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        self.shutdown_tx = Some(shutdown_tx);
+
+        tokio::spawn(async move {
+            shutdown_rx.await.ok();
+            info!("Tor service shutting down...");
+        });
 
         Ok(onion_address)
     }
@@ -104,17 +114,11 @@ impl TorNode {
         self.onion_address.as_deref()
     }
 
-    /// Forward traffic from onion service to local server
-    pub async fn forward_traffic(&self) -> Result<()> {
-        let local_addr = SocketAddr::from(([127, 0, 0, 1], self.config.local_port));
-
-        info!("Forwarding onion traffic to {}", local_addr);
-
-        // NOTE: Actual traffic forwarding will be implemented when
-        // tor-hsservice provides better stream handling APIs
-
-        warn!("Traffic forwarding not yet implemented - waiting for tor-hsservice improvements");
-
+    /// Stop the Tor service
+    pub async fn stop(&mut self) -> Result<()> {
+        if let Some(shutdown_tx) = self.shutdown_tx.take() {
+            shutdown_tx.send(()).ok();
+        }
         Ok(())
     }
 }
@@ -122,6 +126,7 @@ impl TorNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn test_config_builder() {
@@ -132,5 +137,24 @@ mod tests {
 
         assert_eq!(config.local_port, 3000);
         assert_eq!(config.nickname, Some("test-node".to_string()));
+    }
+
+    #[tokio::test]
+    #[ignore] // This test requires a network connection and can be slow
+    async fn test_tor_service_start_stop() {
+        let temp_dir = tempdir().unwrap();
+        let config = TorConfig::default()
+            .unwrap()
+            .with_data_dir(temp_dir.path())
+            .with_local_port(8080);
+
+        let mut service = TorService::new(config);
+        let onion_address = service.start().await.unwrap();
+
+        assert!(onion_address.ends_with(".onion"));
+        assert!(service.onion_address().is_some());
+
+        service.stop().await.unwrap();
+        assert!(service.shutdown_tx.is_none());
     }
 }

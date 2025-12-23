@@ -5,7 +5,12 @@ edition.workspace = true
 license.workspace = true
 description = "Tunneling support for Edge Hive (Cloudflare + Tor)"
 
+[features]
+tor = ["arti-client", "tor-hsservice", "tor-rtcompat", "tor-rtcompat/tokio", "tor-rtcompat/native-tls", "tor-hscrypto", "ed25519-consensus", "sha3", "data-encoding"]
+
 [dependencies]
+tor-config = "0.18.0"
+tokio-util = { version = "0.7", features = ["compat"] }
 tokio.workspace = true
 futures.workspace = true
 serde.workspace = true
@@ -14,13 +19,14 @@ thiserror.workspace = true
 tracing.workspace = true
 
 # Tor Hidden Services (Direct implementation)
-tor-hsservice = "0.37"
-tor-rtcompat = { version = "0.37", features = ["tokio"] }
-tor-hscrypto = "0.37"
-ed25519-consensus.workspace = true
+arti-client = { version = "0.18.0", features = ["onion-service-service"], optional = true }
+tor-hsservice = { version = "0.18.0", optional = true }
+tor-rtcompat = { version = "0.18.0", features = ["tokio", "native-tls"], optional = true }
+tor-hscrypto = { version = "0.18.0", optional = true }
+ed25519-consensus = { workspace = true, optional = true }
 directories.workspace = true
-sha3.workspace = true
-data-encoding.workspace = true
+sha3 = { workspace = true, optional = true }
+data-encoding = { workspace = true, optional = true }
 rand.workspace = true
 
 # Cloudflare Tunnel (placeholder until libcfd is available)
@@ -31,3 +37,4 @@ which.workspace = true
 
 [dev-dependencies]
 tokio-test = "0.4"
+tempfile = "3.3"

@@ -1,6 +1,9 @@
 //! Tor network bootstrap and connection management
 
 use anyhow::{Context, Result};
+use arti_client::{TorClient, TorClientConfig};
+use tor_config::CfgPath;
+use tor_rtcompat::PreferredRuntime;
 use tracing::{info, debug};
 use super::TorConfig;
 
@@ -16,7 +19,7 @@ impl TorBootstrap {
     }
     
     /// Connect to Tor network and bootstrap consensus
-    pub async fn connect(&self) -> Result<()> {
+    pub async fn connect(&self) -> Result<TorClient<PreferredRuntime>> {
         info!("Bootstrapping Tor connection...");
         debug!("Using data directory: {}", self.config.data_dir.display());
         
@@ -24,13 +27,15 @@ impl TorBootstrap {
         let state_dir = self.config.data_dir.join("state");
         std::fs::create_dir_all(&state_dir)
             .context("Failed to create Tor state directory")?;
+
+        let mut config_builder = TorClientConfig::builder();
+        config_builder.storage().state_dir(CfgPath::new(self.config.data_dir.to_str().unwrap().to_string()));
+        let config = config_builder.build()?;
+
+        let tor_client = TorClient::create_bootstrapped(config).await?;
         
-        // TODO: Implement actual Tor bootstrap using tor-rtcompat
-        // For now, this is a placeholder that validates the directory structure
+        info!("✓ Tor bootstrap complete");
         
-        info!("✓ Tor bootstrap placeholder complete");
-        info!("⚠️  Full Tor bootstrap requires tor-rtcompat integration");
-        
-        Ok(())
+        Ok(tor_client)
     }
 }

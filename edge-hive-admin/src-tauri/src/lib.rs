@@ -193,8 +193,10 @@ pub fn run() {
             tunnel_commands::get_tunnel_status,
             // Tasks
             task_commands::get_tasks,
-            task_commands::save_task,
-            task_commands::delete_task
+            task_commands::create_task,
+            task_commands::update_task,
+            task_commands::delete_task,
+            task_commands::save_task
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

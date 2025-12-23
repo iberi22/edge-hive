@@ -32,9 +32,9 @@ use tower_http::{
 };
 use tracing::info;
 
-mod handlers;
-mod middleware;
-mod state;
+pub mod handlers;
+pub mod middleware;
+pub mod state;
 
 pub use state::ApiState;
 

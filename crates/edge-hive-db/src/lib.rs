@@ -42,6 +42,17 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
+/// User information stored in the database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredUser {
+    pub id: String,
+    pub email: String,
+    pub name: Option<String>,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
+    pub deleted_at: Option<surrealdb::Datetime>,
+}
+
 /// Task information stored in the database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredTask {
@@ -133,6 +144,21 @@ impl DatabaseService {
             )
             .await?;
 
+        // Define user table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
+                DEFINE FIELD email ON user TYPE string;
+                DEFINE FIELD name ON user TYPE option<string>;
+                DEFINE FIELD created_at ON user TYPE datetime;
+                DEFINE FIELD updated_at ON user TYPE datetime;
+                DEFINE FIELD deleted_at ON user TYPE option<datetime>;
+                DEFINE INDEX user_email_idx ON user FIELDS email UNIQUE;
+                "#,
+            )
+            .await?;
+
         // Seed initial tasks if table is empty
         let mut count_resp = self.db.query("SELECT count() FROM task GROUP ALL").await?;
         let count: Option<i64> = count_resp.take("count").unwrap_or(None);
@@ -201,6 +227,22 @@ impl DatabaseService {
     pub async fn get_peer(&self, peer_id: &str) -> Result<Option<StoredPeer>, DbError> {
         let peer: Option<StoredPeer> = self.db.select(("peer", peer_id)).await?;
         Ok(peer)
+    }
+
+    /// Save or update a user
+    pub async fn save_user(&self, user: &StoredUser) -> Result<(), DbError> {
+        self.db
+            .query("CREATE user SET id = $id, email = $email, name = $name, created_at = $created_at, updated_at = $updated_at, deleted_at = $deleted_at ON DUPLICATE KEY UPDATE email = $email, name = $name, updated_at = $updated_at, deleted_at = $deleted_at")
+            .bind(user.clone())
+            .await?;
+        Ok(())
+    }
+
+    /// Get a user by ID, returning only if not marked as deleted
+    pub async fn get_user_by_id(&self, user_id: &str) -> Result<Option<StoredUser>, DbError> {
+        let user: Option<StoredUser> = self.db.select(("user", user_id)).await?;
+
+        Ok(user.filter(|u| u.deleted_at.is_none()))
     }
 
     /// Save a configuration value

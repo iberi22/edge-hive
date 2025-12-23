@@ -19,7 +19,7 @@ pub struct TaskDto {
 impl From<StoredTask> for TaskDto {
     fn from(task: StoredTask) -> Self {
         TaskDto {
-            id: task.id.map(|t| t.id.to_string()).unwrap_or_default(),
+            id: task.id.map(|t| t.id.to_raw()).unwrap_or_default(),
             title: task.title,
             description: task.description,
             status: task.status,
@@ -33,6 +33,19 @@ impl From<StoredTask> for TaskDto {
 
 impl From<TaskDto> for StoredTask {
     fn from(dto: TaskDto) -> Self {
+        use std::str::FromStr;
+        
+        // Parse datetime strings or use current time as fallback
+        let due_date = chrono::DateTime::parse_from_rfc3339(&dto.due_date)
+            .or_else(|_| chrono::DateTime::parse_from_str(&dto.due_date, "%+"))
+            .map(|dt| surrealdb::sql::Datetime::from(dt.with_timezone(&chrono::Utc)))
+            .unwrap_or_else(|_| surrealdb::sql::Datetime::from(chrono::Utc::now()));
+            
+        let created_at = chrono::DateTime::parse_from_rfc3339(&dto.created_at)
+            .or_else(|_| chrono::DateTime::parse_from_str(&dto.created_at, "%+"))
+            .map(|dt| surrealdb::sql::Datetime::from(dt.with_timezone(&chrono::Utc)))
+            .unwrap_or_else(|_| surrealdb::sql::Datetime::from(chrono::Utc::now()));
+        
         StoredTask {
             id: if dto.id.is_empty() {
                 None
@@ -43,8 +56,8 @@ impl From<TaskDto> for StoredTask {
             description: dto.description,
             status: dto.status,
             priority: dto.priority,
-            due_date: surrealdb::sql::Datetime::default(), // Frontend should send proper datetime
-            created_at: surrealdb::sql::Datetime::default(),
+            due_date,
+            created_at,
             assignee: dto.assignee,
         }
     }
@@ -58,14 +71,22 @@ pub async fn get_tasks(
     Ok(tasks.into_iter().map(TaskDto::from).collect())
 }
 
+/// Helper function to save a task and return the DTO
+async fn save_task_internal(
+    state: &State<'_, DatabaseState>,
+    task: TaskDto,
+) -> Result<TaskDto, String> {
+    let stored_task: StoredTask = task.into();
+    let saved = state.service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
+    Ok(TaskDto::from(saved))
+}
+
 #[tauri::command]
 pub async fn create_task(
     state: State<'_, DatabaseState>,
     task: TaskDto,
 ) -> Result<TaskDto, String> {
-    let stored_task: StoredTask = task.into();
-    let created = state.service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
-    Ok(TaskDto::from(created))
+    save_task_internal(&state, task).await
 }
 
 #[tauri::command]
@@ -73,9 +94,7 @@ pub async fn update_task(
     state: State<'_, DatabaseState>,
     task: TaskDto,
 ) -> Result<TaskDto, String> {
-    let stored_task: StoredTask = task.into();
-    let updated = state.service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
-    Ok(TaskDto::from(updated))
+    save_task_internal(&state, task).await
 }
 
 #[tauri::command]
@@ -92,7 +111,6 @@ pub async fn save_task(
     state: State<'_, DatabaseState>,
     task: TaskDto,
 ) -> Result<(), String> {
-    let stored_task: StoredTask = task.into();
-    state.service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
+    save_task_internal(&state, task).await?;
     Ok(())
 }

@@ -28,6 +28,10 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-db = { path = "../edge-hive-db" }
 edge-hive-auth = { path = "../edge-hive-auth" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Database
 chrono = { version = "0.4", features = ["serde"] }

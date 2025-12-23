@@ -2,6 +2,10 @@
 //!
 //! Provides embedded database functionality with RocksDB backend.
 
+pub mod session;
+pub mod user;
+
+use crate::user::StoredUser;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
 use surrealdb::engine::local::Mem;
@@ -55,22 +59,21 @@ pub struct StoredTask {
     pub assignee: Option<String>,
 }
 
+/// User information stored in the database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredUser {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<surrealdb::sql::Thing>,
     pub email: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub password_hash: Option<String>,
-    pub name: Option<String>,
+    pub password_hash: String,
     pub provider: Option<String>,
-    pub role: String,
+    pub provider_id: Option<String>,
+    pub name: Option<String>,
+    pub avatar_url: Option<String>,
     pub created_at: surrealdb::sql::Datetime,
     pub updated_at: surrealdb::sql::Datetime,
-    pub last_login: Option<surrealdb::sql::Datetime>,
     pub email_verified: bool,
+    pub role: String,
 }
-
 
 /// Database service for Edge Hive
 pub struct DatabaseService {
@@ -122,6 +125,27 @@ impl DatabaseService {
             )
             .await?;
 
+        // Define users table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE users SCHEMAFULL;
+                DEFINE FIELD email ON users TYPE string ASSERT string::is::email($value);
+                DEFINE FIELD password_hash ON users TYPE string;
+                DEFINE FIELD provider ON users TYPE option<string>;
+                DEFINE FIELD provider_id ON users TYPE option<string>;
+                DEFINE FIELD name ON users TYPE option<string>;
+                DEFINE FIELD avatar_url ON users TYPE option<string>;
+                DEFINE FIELD created_at ON users TYPE datetime DEFAULT time::now();
+                DEFINE FIELD updated_at ON users TYPE datetime DEFAULT time::now();
+                DEFINE FIELD email_verified ON users TYPE bool DEFAULT false;
+                DEFINE FIELD role ON users TYPE string DEFAULT 'user';
+                DEFINE INDEX users_email ON users COLUMNS email UNIQUE;
+                DEFINE INDEX users_provider ON users COLUMNS provider, provider_id UNIQUE;
+                "#,
+            )
+            .await?;
+
         // Define config table
         self.db
             .query(
@@ -150,21 +174,31 @@ impl DatabaseService {
             )
             .await?;
 
-        // Define user table
+        // Define users table
         self.db
             .query(
                 r#"
-                DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
-                DEFINE FIELD email ON user TYPE string;
-                DEFINE FIELD password_hash ON user TYPE option<string>;
-                DEFINE FIELD name ON user TYPE option<string>;
-                DEFINE FIELD provider ON user TYPE option<string>;
-                DEFINE FIELD role ON user TYPE string;
-                DEFINE FIELD created_at ON user TYPE datetime;
-                DEFINE FIELD updated_at ON user TYPE datetime;
-                DEFINE FIELD last_login ON user TYPE option<datetime>;
-                DEFINE FIELD email_verified ON user TYPE bool;
-                DEFINE INDEX email_idx ON user FIELDS email UNIQUE;
+                DEFINE TABLE IF NOT EXISTS users SCHEMAFULL;
+                DEFINE FIELD email ON users TYPE string;
+                DEFINE FIELD name ON users TYPE option<string>;
+                DEFINE FIELD password_hash ON users TYPE string;
+                DEFINE FIELD created_at ON users TYPE datetime;
+                DEFINE FIELD updated_at ON users TYPE datetime;
+                DEFINE INDEX user_email_idx ON users FIELDS email UNIQUE;
+                "#,
+            )
+            .await?;
+
+        // Define sessions table
+        self.db
+            .query(
+                r#"
+                DEFINE TABLE IF NOT EXISTS sessions SCHEMAFULL;
+                DEFINE FIELD user_id ON sessions TYPE record<users>;
+                DEFINE FIELD refresh_token_hash ON sessions TYPE string;
+                DEFINE FIELD expires_at ON sessions TYPE datetime;
+                DEFINE FIELD created_at ON sessions TYPE datetime;
+                DEFINE FIELD updated_at ON sessions TYPE datetime;
                 "#,
             )
             .await?;
@@ -302,21 +336,52 @@ impl DatabaseService {
 
     /// Create a new user
     pub async fn create_user(&self, user: &StoredUser) -> Result<StoredUser, DbError> {
-        let created: StoredUser = self.db
-            .create("user")
-            .content(user)
-            .await?;
-        Ok(created)
+        let created: Option<StoredUser> = self.db.create("users").content(user.clone()).await?;
+        created.ok_or_else(|| DbError::Query("User creation returned no record".to_string()))
     }
 
     /// Get a user by email
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
-        let mut result = self.db
-            .query("SELECT * FROM user WHERE email = $email")
-            .bind(("email", email))
+        let mut result = self
+            .db
+            .query("SELECT * FROM users WHERE email = $email")
+            .bind(("email", email.to_string()))
             .await?;
         let user: Option<StoredUser> = result.take(0)?;
         Ok(user)
+    }
+
+    /// Get a user by provider
+    pub async fn get_user_by_provider(
+        &self,
+        provider: &str,
+        provider_id: &str,
+    ) -> Result<Option<StoredUser>, DbError> {
+        let mut result = self
+            .db
+            .query("SELECT * FROM users WHERE provider = $provider AND provider_id = $provider_id")
+            .bind(("provider", provider.to_string()))
+            .bind(("provider_id", provider_id.to_string()))
+            .await?;
+        let user: Option<StoredUser> = result.take(0)?;
+        Ok(user)
+    }
+
+    /// Update a user
+    pub async fn update_user(&self, user: &StoredUser) -> Result<(), DbError> {
+        if let Some(id) = &user.id {
+            let record_id = id.id.to_string();
+            let _: Option<StoredUser> = self.db.update(("users", record_id)).content(user.clone()).await?;
+            Ok(())
+        } else {
+            Err(DbError::Query("User ID is required for update".to_string()))
+        }
+    }
+
+    /// Delete a user
+    pub async fn delete_user(&self, id: &str) -> Result<(), DbError> {
+        let _: Option<StoredUser> = self.db.delete(("users", id)).await?;
+        Ok(())
     }
 
     /// Execute a raw SurrealQL query
@@ -362,6 +427,32 @@ impl DatabaseService {
         table: &str,
     ) -> Result<surrealdb::method::Stream<Vec<LiveRecord>>, DbError> {
         Ok(self.db.select::<Vec<LiveRecord>>(table).live().await?)
+    }
+
+    // User management
+    pub async fn create_user(&self, user: &StoredUser) -> Result<StoredUser, DbError> {
+        let created: Option<StoredUser> = self.db.create("users").content(user.clone()).await?;
+        Ok(created.unwrap())
+    }
+
+    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
+        let mut result = self
+            .db
+            .query("SELECT * FROM users WHERE email = $email")
+            .bind(("email", email.to_string()))
+            .await?;
+        let user: Option<StoredUser> = result.take(0)?;
+        Ok(user)
+    }
+
+    // Session management
+    pub async fn create_session(
+        &self,
+        session: &session::StoredSession,
+    ) -> Result<session::StoredSession, DbError> {
+        let created: Option<session::StoredSession> =
+            self.db.create("sessions").content(session.clone()).await?;
+        Ok(created.unwrap())
     }
 }
 
@@ -432,5 +523,72 @@ mod tests {
 
         let next = next.expect("stream ended").expect("notification ok");
         assert!(matches!(next.action, surrealdb::Action::Create));
+    }
+
+    #[tokio::test]
+    async fn test_create_and_get_user() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = DatabaseService::new(&db_path).await.unwrap();
+
+        let user = StoredUser {
+            id: None,
+            email: "test@example.com".to_string(),
+            password_hash: "hash".to_string(),
+            provider: None,
+            provider_id: None,
+            name: None,
+            avatar_url: None,
+            created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            email_verified: false,
+            role: "user".to_string(),
+        };
+
+        let created_user = db.create_user(&user).await.unwrap();
+        assert!(created_user.id.is_some());
+
+        let fetched_user = db.get_user_by_email("test@example.com").await.unwrap();
+        assert!(fetched_user.is_some());
+        assert_eq!(fetched_user.unwrap().email, "test@example.com");
+    }
+
+    #[tokio::test]
+    async fn test_unique_email_constraint() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = DatabaseService::new(&db_path).await.unwrap();
+
+        let user1 = StoredUser {
+            id: None,
+            email: "test@example.com".to_string(),
+            password_hash: "hash1".to_string(),
+            provider: None,
+            provider_id: None,
+            name: None,
+            avatar_url: None,
+            created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            email_verified: false,
+            role: "user".to_string(),
+        };
+
+        let user2 = StoredUser {
+            id: None,
+            email: "test@example.com".to_string(),
+            password_hash: "hash2".to_string(),
+            provider: None,
+            provider_id: None,
+            name: None,
+            avatar_url: None,
+            created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
+            email_verified: false,
+            role: "user".to_string(),
+        };
+
+        db.create_user(&user1).await.unwrap();
+        let result = db.create_user(&user2).await;
+        assert!(result.is_err());
     }
 }

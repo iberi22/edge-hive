@@ -1,12 +1,9 @@
 //! API Gateway shared state
 
-<<<<<<< HEAD
-use edge_hive_auth::jwt::TokenValidator;
-=======
 use edge_hive_auth::{TokenGenerator, TokenValidator};
->>>>>>> master
 use edge_hive_cache::CacheService;
 use edge_hive_db::DatabaseService;
+use edge_hive_mcp::AuthenticatedMCPServer;
 use edge_hive_realtime::{RealtimeServer, RealtimeServerConfig};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -32,6 +29,9 @@ pub struct ApiState {
 
     /// JWT token validator
     pub token_validator: Arc<TokenValidator>,
+
+    /// MCP server
+    pub mcp_server: Arc<AuthenticatedMCPServer>,
 }
 
 impl ApiState {
@@ -45,6 +45,7 @@ impl ApiState {
         token_generator: TokenGenerator,
         token_validator: TokenValidator,
     ) -> Self {
+        let mcp_server = Arc::new(AuthenticatedMCPServer::new(token_validator.clone()));
         Self {
             cache: Arc::new(Mutex::new(cache)),
             db,
@@ -52,6 +53,7 @@ impl ApiState {
             data_dir,
             token_generator: Arc::new(token_generator),
             token_validator: Arc::new(token_validator),
+            mcp_server,
         }
     }
 

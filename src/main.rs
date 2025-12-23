@@ -203,7 +203,7 @@ async fn handle_start(
     port: u16,
     enable_https: bool,
     hostname: String,
-    _tor: bool,
+    enable_tor: bool,
     discovery: bool,
     bootstrap_peer: Option<String>,
     config_dir: &PathBuf,
@@ -280,6 +280,39 @@ async fn handle_start(
         fs::write(&jwt_secret_path, &secret)?;
         secret
     };
+
+    // Start Tor service if enabled
+    if enable_tor {
+        use edge_hive_tunnel::{TorConfig, TorService};
+        
+        info!("🧅 Tor onion service enabled");
+        
+        let tor_config = TorConfig::default()
+            .map(|cfg| cfg.with_local_port(port).with_enabled(true))
+            .unwrap_or_else(|_| {
+                TorConfig {
+                    data_dir: data_dir.join("tor"),
+                    local_port: port,
+                    nickname: Some(identity.name().to_string()),
+                    enabled: true,
+                }
+            });
+        
+        let mut tor_service = TorService::new(tor_config);
+        
+        // Start Tor service in background
+        tokio::spawn(async move {
+            match tor_service.start().await {
+                Ok(onion_address) => {
+                    info!("🧅 Onion service available at: http://{}.onion", onion_address);
+                    info!("🧅 Share this address to allow anonymous access to your node");
+                }
+                Err(e) => {
+                    error!("Failed to start Tor service: {}", e);
+                }
+            }
+        });
+    }
 
     server::run(port, discovery_svc, message_store, data_dir, Some(jwt_secret), enable_https, hostname).await?;
 

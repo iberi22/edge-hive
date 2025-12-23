@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::{AuthError, Result};
 
 /// JWT Claims structure following OAuth2 and MCP requirements
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct JwtClaims {
     /// Subject (client_id)
     pub sub: String,
@@ -113,6 +113,11 @@ impl TokenGenerator {
 
         encode(&Header::default(), &claims, &self.keys.encoding_key)
             .map_err(AuthError::from)
+    }
+
+    /// Generate JWT access token from existing claims (useful for tests)
+    pub fn generate_token_from_claims(&self, claims: &JwtClaims) -> Result<String> {
+        encode(&Header::default(), claims, &self.keys.encoding_key).map_err(AuthError::from)
     }
 }
 

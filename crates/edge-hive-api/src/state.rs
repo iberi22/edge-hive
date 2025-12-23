@@ -1,6 +1,10 @@
 //! API Gateway shared state
 
+<<<<<<< HEAD
+use edge_hive_auth::jwt::TokenValidator;
+=======
 use edge_hive_auth::{TokenGenerator, TokenValidator};
+>>>>>>> master
 use edge_hive_cache::CacheService;
 use edge_hive_db::DatabaseService;
 use edge_hive_realtime::{RealtimeServer, RealtimeServerConfig};

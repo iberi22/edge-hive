@@ -46,19 +46,6 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
-/// Task information stored in the database
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoredTask {
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub status: String,
-    pub priority: String,
-    pub due_date: surrealdb::Datetime,
-    pub created_at: surrealdb::Datetime,
-    pub assignee: Option<String>,
-}
-
 /// User information stored in the database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredUser {
@@ -73,6 +60,19 @@ pub struct StoredUser {
     pub updated_at: surrealdb::sql::Datetime,
     pub email_verified: bool,
     pub role: String,
+}
+
+/// Task information stored in the database
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredTask {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub status: String,
+    pub priority: String,
+    pub due_date: surrealdb::sql::Datetime,
+    pub created_at: surrealdb::sql::Datetime,
+    pub assignee: Option<String>,
 }
 
 /// Database service for Edge Hive
@@ -129,7 +129,7 @@ impl DatabaseService {
         self.db
             .query(
                 r#"
-                DEFINE TABLE users SCHEMAFULL;
+                DEFINE TABLE IF NOT EXISTS users SCHEMAFULL;
                 DEFINE FIELD email ON users TYPE string ASSERT string::is::email($value);
                 DEFINE FIELD password_hash ON users TYPE string;
                 DEFINE FIELD provider ON users TYPE option<string>;
@@ -174,21 +174,6 @@ impl DatabaseService {
             )
             .await?;
 
-        // Define users table
-        self.db
-            .query(
-                r#"
-                DEFINE TABLE IF NOT EXISTS users SCHEMAFULL;
-                DEFINE FIELD email ON users TYPE string;
-                DEFINE FIELD name ON users TYPE option<string>;
-                DEFINE FIELD password_hash ON users TYPE string;
-                DEFINE FIELD created_at ON users TYPE datetime;
-                DEFINE FIELD updated_at ON users TYPE datetime;
-                DEFINE INDEX user_email_idx ON users FIELDS email UNIQUE;
-                "#,
-            )
-            .await?;
-
         // Define sessions table
         self.db
             .query(
@@ -197,8 +182,9 @@ impl DatabaseService {
                 DEFINE FIELD user_id ON sessions TYPE record<users>;
                 DEFINE FIELD refresh_token_hash ON sessions TYPE string;
                 DEFINE FIELD expires_at ON sessions TYPE datetime;
-                DEFINE FIELD created_at ON sessions TYPE datetime;
-                DEFINE FIELD updated_at ON sessions TYPE datetime;
+                DEFINE FIELD created_at ON sessions TYPE datetime DEFAULT time::now();
+                DEFINE FIELD updated_at ON sessions TYPE datetime DEFAULT time::now();
+                DEFINE INDEX sessions_token ON sessions COLUMNS refresh_token_hash UNIQUE;
                 "#,
             )
             .await?;
@@ -340,6 +326,12 @@ impl DatabaseService {
         created.ok_or_else(|| DbError::Query("User creation returned no record".to_string()))
     }
 
+    /// Get a user by ID
+    pub async fn get_user_by_id(&self, user_id: &str) -> Result<Option<StoredUser>, DbError> {
+        let user: Option<StoredUser> = self.db.select(("users", user_id)).await?;
+        Ok(user)
+    }
+
     /// Get a user by email
     pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
         let mut result = self
@@ -384,67 +376,6 @@ impl DatabaseService {
         Ok(())
     }
 
-    /// Execute a raw SurrealQL query
-    pub async fn query(&self, sql: &str) -> Result<surrealdb::Response, DbError> {
-        Ok(self.db.query(sql).await?)
-    }
-
-    /// Execute a raw SurrealQL query and return the first statement's results as JSON.
-    ///
-    /// This is useful for HTTP handlers that want to return `serde_json::Value` while
-    /// SurrealDB may contain non-JSON-native types.
-    pub async fn query_json(&self, sql: &str) -> Result<Vec<serde_json::Value>, DbError> {
-        #[derive(Debug, Deserialize)]
-        struct AnyRecord {
-            id: surrealdb::sql::Thing,
-            #[serde(flatten)]
-            fields: serde_json::Map<String, serde_json::Value>,
-        }
-
-        let mut resp = self.db.query(sql).await?;
-        let records: Vec<AnyRecord> = resp
-            .take(0)
-            .map_err(|e| DbError::Query(e.to_string()))?;
-
-        let mut out = Vec::with_capacity(records.len());
-        for record in records {
-            let mut obj = record.fields;
-            obj.insert(
-                "id".to_string(),
-                serde_json::Value::String(record.id.to_string()),
-            );
-            out.push(serde_json::Value::Object(obj));
-        }
-
-        Ok(out)
-    }
-
-    /// Create a Live Query stream for all changes on a table.
-    ///
-    /// This uses SurrealDB's Rust client live query support (embedded/local engine).
-    pub async fn live_table(
-        &self,
-        table: &str,
-    ) -> Result<surrealdb::method::Stream<Vec<LiveRecord>>, DbError> {
-        Ok(self.db.select::<Vec<LiveRecord>>(table).live().await?)
-    }
-
-    // User management
-    pub async fn create_user(&self, user: &StoredUser) -> Result<StoredUser, DbError> {
-        let created: Option<StoredUser> = self.db.create("users").content(user.clone()).await?;
-        Ok(created.unwrap())
-    }
-
-    pub async fn get_user_by_email(&self, email: &str) -> Result<Option<StoredUser>, DbError> {
-        let mut result = self
-            .db
-            .query("SELECT * FROM users WHERE email = $email")
-            .bind(("email", email.to_string()))
-            .await?;
-        let user: Option<StoredUser> = result.take(0)?;
-        Ok(user)
-    }
-
     // Session management
     pub async fn create_session(
         &self,
@@ -452,7 +383,7 @@ impl DatabaseService {
     ) -> Result<session::StoredSession, DbError> {
         let created: Option<session::StoredSession> =
             self.db.create("sessions").content(session.clone()).await?;
-        Ok(created.unwrap())
+        created.ok_or_else(|| DbError::Query("Session creation returned no record".to_string()))
     }
 }
 

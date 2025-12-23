@@ -6,3 +6,4 @@ pub mod auth;
 pub mod edge;
 pub mod realtime;
 pub mod mcp;
+pub mod user;

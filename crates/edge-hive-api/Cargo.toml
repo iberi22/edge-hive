@@ -28,18 +28,13 @@ edge-hive-cache = { path = "../edge-hive-cache" }
 edge-hive-db = { path = "../edge-hive-db" }
 edge-hive-auth = { path = "../edge-hive-auth" }
 edge-hive-realtime = { path = "../edge-hive-realtime" }
-argon2 = "0.5"
-rand = "0.8"
-sha2 = "0.10"
-chrono = { version = "0.4", features = ["serde"] }
 
 # Database
 chrono = { version = "0.4", features = ["serde"] }
 surrealdb = { version = "1.0.0-beta.9", features = ["kv-mem"] }
-
-# Password hashing
 argon2 = { version = "0.5", features = ["std"] }
 rand = { version = "0.8", features = ["std", "std_rng"] }
+sha2 = "0.10"
 
 # Validation
 validator = { version = "0.18", features = ["derive"] }

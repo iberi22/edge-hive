@@ -1,7 +1,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
-import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment, PlanInfo, CloudRegion, InstanceSize, CloudNode } from '../types';
+import { SystemMetric, LogEntry, DatabaseTable, EdgeFunction, User, StorageBucket, StorageFile, ApiKey, TopPath, RLSPolicy, OAuthProvider, AccessLogEntry, EmailTemplate, StoragePolicy, Backup, CacheMetrics, GraphNode, GraphEdge, LiveQuery, QueryResult, VPNPeer, ChaosExperiment, PlanInfo, CloudRegion, InstanceSize, CloudNode, SystemTask } from '../types';
 
 export const tauriApi = {
    // Metrics & Logs
@@ -22,6 +22,30 @@ export const tauriApi = {
       } catch (e) {
          console.error("Failed to get metrics", e);
          return [];
+      }
+   },
+   createTask: async (task: SystemTask): Promise<SystemTask> => {
+      try {
+         return await invoke<SystemTask>('create_task', { task });
+      } catch (e) {
+         console.error("Failed to create task", e);
+         throw e;
+      }
+   },
+   updateTask: async (task: SystemTask): Promise<SystemTask> => {
+      try {
+         return await invoke<SystemTask>('update_task', { task });
+      } catch (e) {
+         console.error("Failed to update task", e);
+         throw e;
+      }
+   },
+   deleteTask: async (id: string): Promise<void> => {
+      try {
+         await invoke('delete_task', { id });
+      } catch (e) {
+         console.error("Failed to delete task", e);
+         throw e;
       }
    },
 

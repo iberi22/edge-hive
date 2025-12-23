@@ -2,7 +2,7 @@
 
 use crate::types::{CloudNode, NodeStatus, PeerInfo};
 use crate::ServerState;
-use sysinfo::{CpuRefreshKind, Pid, RefreshKind, System};
+use sysinfo::{Pid, System};
 use serde::{Serialize, Deserialize};
 use tauri::{State, Manager};
 use tauri_plugin_shell::ShellExt;
@@ -20,18 +20,14 @@ pub struct SystemStats {
 /// Get system statistics (CPU, RAM)
 #[tauri::command]
 pub async fn get_system_stats() -> Result<SystemStats, String> {
-    let mut sys = System::new_with_specifics(
-        RefreshKind::new()
-            .with_cpu(CpuRefreshKind::everything())
-            .with_memory(sysinfo::MemoryRefreshKind::everything()),
-    );
+    let mut sys = System::new();
 
     // Wait a bit for CPU usage calculation
     std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
     sys.refresh_memory();
 
-    let cpu_usage = sys.global_cpu_info().cpu_usage();
+    let cpu_usage = sys.global_cpu_usage();
     let total_memory = sys.total_memory();
     let used_memory = sys.used_memory();
     let total_swap = sys.total_swap();
@@ -51,12 +47,11 @@ pub async fn get_system_stats() -> Result<SystemStats, String> {
 pub async fn get_node_status(state: tauri::State<'_, ServerState>) -> Result<NodeStatus, String> {
     let pid_lock = state.pid.lock().unwrap();
     if let Some(pid_val) = *pid_lock {
-        let s = System::new_with_specifics(
-            RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()),
-        );
+        let mut s = System::new();
+        s.refresh_processes();
         if let Some(process) = s.process(Pid::from(pid_val as usize)) {
             return Ok(NodeStatus {
-                name: process.name().to_string(),
+                name: process.name().to_string_lossy().into_owned(),
                 peer_id: format!("PID: {}", pid_val),
                 status: "running".to_string(),
                 peers_count: 0, // Placeholder
@@ -81,12 +76,18 @@ pub async fn get_node_status(state: tauri::State<'_, ServerState>) -> Result<Nod
 pub async fn get_peers(state: State<'_, DatabaseState>) -> Result<Vec<PeerInfo>, String> {
     // Return peers stored in DB + potential discovery logic
     // For now, simple query to 'peer' table
-    let result = state.service.query("SELECT * FROM peer").await.map_err(|e| e.to_string())?;
+    let result = state.db_service.get_peers().await.map_err(|e| e.to_string())?;
     // This assumes specific structure returned by query.
     // Since 'query' returns raw JSON-like structure (surrealdb::Response), getting directly into Vec<PeerInfo> might need manual deserialization or helper.
     // For simplicity, we return empty or implement a 'get_all_peers' in DatabaseService later.
     // Let's assume empty for this step to compile, or deserialize cleanly if possible.
-    Ok(vec![])
+    Ok(result.into_iter().map(|p| PeerInfo {
+        peer_id: p.peer_id,
+        name: p.name,
+        addresses: p.addresses,
+        last_seen: p.last_seen.to_string(),
+        source: "database".to_string(),
+    }).collect())
 }
 
 /// Start the server
@@ -130,8 +131,8 @@ pub async fn start_server(
 pub async fn stop_server(state: tauri::State<'_, ServerState>) -> Result<(), String> {
     let mut pid_lock = state.pid.lock().unwrap();
     if let Some(pid_val) = *pid_lock {
-        let s =
-            System::new_with_specifics(RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::new()));
+        let mut s = System::new();
+        s.refresh_processes();
         if let Some(process) = s.process(Pid::from(pid_val as usize)) {
             if !process.kill() {
                 return Err(format!("Failed to kill process with PID {}", pid_val));

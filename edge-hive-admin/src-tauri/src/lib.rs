@@ -25,7 +25,7 @@ pub mod cache_commands;
 pub mod tunnel_commands;
 pub mod settings_commands;
 pub mod cloud_commands;
-mod task_commands;
+pub mod task_commands;
 
 
 // Use Commands & States
@@ -193,7 +193,8 @@ pub fn run() {
             tunnel_commands::get_tunnel_status,
             // Tasks
             task_commands::get_tasks,
-            task_commands::save_task,
+            task_commands::create_task,
+            task_commands::update_task,
             task_commands::delete_task
         ])
         .run(tauri::generate_context!())

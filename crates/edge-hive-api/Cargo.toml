@@ -7,7 +7,7 @@ description = "Unified API Gateway for Edge Hive"
 
 [dependencies]
 # HTTP Server
-axum = { workspace = true, features = ["ws"] }
+axum = { workspace = true, features = ["ws", "multipart"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
 tokio = { workspace = true, features = ["full"] }

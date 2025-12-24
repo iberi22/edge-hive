@@ -34,6 +34,7 @@ use tracing::info;
 
 pub mod middleware;
 pub mod state;
+pub mod handlers;
 
 pub use state::ApiState;
 
@@ -61,9 +62,13 @@ pub fn create_router(state: ApiState) -> Router {
         .route("/api/v1/auth/logout", get(handlers::auth::logout));
 
     // Edge functions routes (placeholder for future WASM integration)
-    let edge_routes = Router::new()
-        .route("/api/v1/edge/:function", post(handlers::edge::execute_function))
-        .route("/api/v1/edge", get(handlers::edge::list_functions));
+    let wasm_routes = Router::new()
+        .route("/api/v1/edge", get(handlers::wasm::list_wasm_functions))
+        .route("/api/v1/edge/:function_name", post(handlers::wasm::deploy_function))
+        .route("/api/v1/edge/:function_name/versions", get(handlers::wasm::get_function_versions))
+        .route("/api/v1/edge/:function_name/rollback", post(handlers::wasm::rollback_function))
+        .route("/api/v1/edge/:function_name", delete(handlers::wasm::delete_function))
+        .route("/api/v1/edge/:function_name/execute", post(handlers::wasm::execute_wasm_function));
 
     // Real-time routes (placeholder for WebSocket)
     let realtime_routes = Router::new()
@@ -79,7 +84,7 @@ pub fn create_router(state: ApiState) -> Router {
         .merge(health_routes)
         .merge(data_routes)
         .merge(auth_routes)
-        .merge(edge_routes)
+        .merge(wasm_routes)
         .merge(realtime_routes)
         .merge(mcp_routes)
         .layer(

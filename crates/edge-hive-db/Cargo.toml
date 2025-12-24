@@ -15,6 +15,7 @@ thiserror.workspace = true
 tracing.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
 argon2 = { version = "0.5", features = ["std"] }
+futures = { workspace = true }
 rand = "0.8"
 
 [dev-dependencies]

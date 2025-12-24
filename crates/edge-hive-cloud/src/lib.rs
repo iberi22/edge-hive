@@ -165,11 +165,10 @@ impl AWSProvisioner {
             .await
             .map_err(|e| CloudError::ProvisioningFailed(e.to_string()))?;
 
-        let instance = if let Some(instances) = run_instances_output.instances() {
-            instances.get(0).cloned()
-        } else {
-            None
-        }.ok_or_else(|| CloudError::ProvisioningFailed("No instances returned".to_string()))?;
+        let instance = run_instances_output.instances()
+            .first()
+            .cloned()
+            .ok_or_else(|| CloudError::ProvisioningFailed("No instances returned".to_string()))?;
 
         let instance_id = instance.instance_id().ok_or_else(|| CloudError::ProvisioningFailed("No instance ID returned".to_string()))?.to_string();
 

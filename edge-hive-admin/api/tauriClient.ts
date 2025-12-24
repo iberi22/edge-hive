@@ -400,6 +400,30 @@ export const tauriApi = {
          return [];
       }
    },
+   createTask: async (task: SystemTask): Promise<void> => {
+      try {
+         await invoke('create_task', { task });
+      } catch (e) {
+         console.error("Failed to create task", e);
+         throw e;
+      }
+   },
+   updateTask: async (task: SystemTask): Promise<void> => {
+      try {
+         await invoke('update_task', { task });
+      } catch (e) {
+         console.error("Failed to update task", e);
+         throw e;
+      }
+   },
+   deleteTask: async (id: string): Promise<void> => {
+      try {
+         await invoke('delete_task', { id });
+      } catch (e) {
+         console.error("Failed to delete task", e);
+         throw e;
+      }
+   },
    invokeFunction: async (fnId: string, payload: any) => {
       try {
          const result = await invoke<any>('invoke_function', { id: fnId, payload });

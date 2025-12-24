@@ -155,6 +155,7 @@ async fn handle_connection(
         let text = msg.to_text()?;
         let parsed: Result<ClientMessage, _> = serde_json::from_str(text);
 
+        match parsed {
             Ok(ClientMessage::Ping) => {
                 let _ = out_tx
                     .send(Message::Text(serde_json::to_string(&ServerMessage::Pong)?.into()));

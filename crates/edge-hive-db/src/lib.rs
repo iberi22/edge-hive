@@ -46,22 +46,6 @@ pub struct StoredConfig {
     pub value: serde_json::Value,
 }
 
-/// User information stored in the database
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoredUser {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub email: String,
-    pub password_hash: String,
-    pub provider: Option<String>,
-    pub provider_id: Option<String>,
-    pub name: Option<String>,
-    pub avatar_url: Option<String>,
-    pub created_at: surrealdb::sql::Datetime,
-    pub updated_at: surrealdb::sql::Datetime,
-    pub email_verified: bool,
-    pub role: String,
-}
-
 /// Task information stored in the database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoredTask {
@@ -318,7 +302,7 @@ impl DatabaseService {
                 created_at: task.created_at.clone(),
                 assignee: task.assignee.clone(),
             };
-            
+
             let record_id = (id.tb.as_str(), id.id.to_string());
             let saved: Option<StoredTask> = self.db
                 .upsert(record_id)
@@ -462,6 +446,22 @@ impl DatabaseService {
         let deleted_sessions: Vec<StoredSession> = result.take(0)?;
         Ok(deleted_sessions.len() as u64)
     }
+
+    // Execute a raw JSON query and return the JSON response
+    pub async fn query_json(&self, query: &str) -> Result<Vec<serde_json::Value>, DbError> {
+        let mut result = self.db.query(query).await?;
+        let values: Vec<serde_json::Value> = result.take(0)?;
+        Ok(values)
+    }
+
+    /// Subscribe to a live query stream for a table.
+    pub async fn live_table(
+        &self,
+        table: &str,
+    ) -> Result<impl futures::Stream<Item = Result<surrealdb::Notification<LiveRecord>, surrealdb::Error>>, DbError> {
+        let stream = self.db.select(table).live().await?;
+        Ok(stream)
+    }
 }
 
 #[cfg(test)]
@@ -521,14 +521,9 @@ mod tests {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         let created_user = db.create_user(&user).await.unwrap();
@@ -549,28 +544,18 @@ mod tests {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash1".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         let user2 = StoredUser {
             id: None,
             email: "test@example.com".to_string(),
             password_hash: "hash2".to_string(),
-            provider: None,
-            provider_id: None,
             name: None,
-            avatar_url: None,
             created_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
             updated_at: surrealdb::sql::Datetime::from(chrono::Utc::now()),
-            email_verified: false,
-            role: "user".to_string(),
         };
 
         db.create_user(&user1).await.unwrap();
@@ -723,10 +708,10 @@ mod tests {
 
         let created = db.save_task(&task).await.unwrap();
         assert!(created.id.is_some());
-        
+
         // Extract the generated ID for retrieval
         let task_id = created.id.as_ref().unwrap().id.to_raw();
-        
+
         // Test get task by ID
         let retrieved = db.get_task(&task_id).await.unwrap();
         assert!(retrieved.is_some(), "Failed to retrieve task");

@@ -15,7 +15,6 @@ tracing.workspace = true
 
 chrono.workspace = true
 jsonwebtoken.workspace = true
-async-stripe = { workspace = true, features = ["runtime-tokio-hyper", "webhook-events"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

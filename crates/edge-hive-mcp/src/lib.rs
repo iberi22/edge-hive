@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use edge_hive_auth::{middleware::AuthenticatedUser, TokenValidator};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MCPRequest {
@@ -16,7 +17,7 @@ pub struct MCPRequest {
     pub params: Option<Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct MCPResponse {
     pub jsonrpc: String,
     pub id: Option<Value>,
@@ -26,13 +27,24 @@ pub struct MCPResponse {
     pub error: Option<MCPError>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct MCPError {
     pub code: i32,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
 }
+
+impl MCPError {
+    pub fn insufficient_permissions() -> Self {
+        Self {
+            code: -32000,
+            message: "Insufficient permissions".to_string(),
+            data: None,
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tool {
@@ -349,9 +361,65 @@ impl MCPServer {
     }
 }
 
+// ===== Authenticated MCP Server =====
+
+pub struct AuthenticatedMCPServer {
+    inner: MCPServer,
+    validator: Arc<TokenValidator>,
+}
+
+impl AuthenticatedMCPServer {
+    pub fn new(validator: TokenValidator) -> Self {
+        Self {
+            inner: MCPServer::new(),
+            validator: Arc::new(validator),
+        }
+    }
+
+    pub async fn handle_request(&self, request: MCPRequest, user: AuthenticatedUser) -> MCPResponse {
+        let required_scopes = match request.method.as_str() {
+            "tools/list" => vec!["mcp:read".to_string()],
+            "tools/call" => vec!["mcp:call".to_string()],
+            _ => return MCPResponse {
+                jsonrpc: "2.0".to_string(),
+                id: request.id,
+                result: None,
+                error: Some(MCPError {
+                    code: -32601,
+                    message: "Method not found".to_string(),
+                    data: None,
+                }),
+            },
+        };
+
+        if !user.claims.has_all_scopes(&required_scopes) {
+            return MCPResponse {
+                jsonrpc: "2.0".to_string(),
+                id: request.id,
+                result: None,
+                error: Some(MCPError::insufficient_permissions()),
+            };
+        }
+
+        self.inner.handle_request(request).await
+    }
+
+    /// Update system stats (called periodically from Tauri backend)
+    pub async fn update_stats(&self, stats: DashboardStats) {
+        self.inner.update_stats(stats).await;
+    }
+
+    /// Update nodes list (called periodically from Tauri backend)
+    pub async fn update_nodes(&self, nodes: Vec<Node>) {
+        self.inner.update_nodes(nodes).await;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use edge_hive_auth::JwtClaims;
+    use chrono::Utc;
 
     #[tokio::test]
     async fn test_list_tools() {
@@ -493,5 +561,92 @@ mod tests {
         // Verify status changed
         let nodes = server.nodes.read().await;
         assert_eq!(nodes[0].status, "maintenance");
+    }
+
+    // ===== Authenticated Server Tests =====
+
+    fn create_test_validator() -> TokenValidator {
+        TokenValidator::new("test-secret".as_bytes(), "test_issuer".to_string())
+    }
+
+    fn create_test_user(scopes: Vec<String>) -> AuthenticatedUser {
+        let now = Utc::now().timestamp();
+        AuthenticatedUser {
+            claims: JwtClaims {
+                sub: "test_client".to_string(),
+                aud: "test_audience".to_string(),
+                exp: now + 3600,
+                iat: now,
+                iss: "test_issuer".to_string(),
+                jti: "test_jti".to_string(),
+                node_id: None,
+                scopes,
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn test_auth_server_list_tools_success() {
+        let validator = create_test_validator();
+        let server = AuthenticatedMCPServer::new(validator);
+        let user = create_test_user(vec!["mcp:read".to_string()]);
+        let request = MCPRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(json!(1)),
+            method: "tools/list".to_string(),
+            params: None,
+        };
+
+        let response = server.handle_request(request, user).await;
+        assert!(response.error.is_none());
+        assert!(response.result.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_auth_server_list_tools_fail_no_scope() {
+        let validator = create_test_validator();
+        let server = AuthenticatedMCPServer::new(validator);
+        let user = create_test_user(vec![]);
+        let request = MCPRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(json!(1)),
+            method: "tools/list".to_string(),
+            params: None,
+        };
+
+        let response = server.handle_request(request, user).await;
+        assert_eq!(response.error, Some(MCPError::insufficient_permissions()));
+    }
+
+    #[tokio::test]
+    async fn test_auth_server_call_tool_success() {
+        let validator = create_test_validator();
+        let server = AuthenticatedMCPServer::new(validator);
+        let user = create_test_user(vec!["mcp:call".to_string()]);
+        let request = MCPRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(json!(2)),
+            method: "tools/call".to_string(),
+            params: Some(json!({ "name": "admin_get_dashboard_stats" })),
+        };
+
+        let response = server.handle_request(request, user).await;
+        assert!(response.error.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_auth_server_call_tool_fail_no_scope() {
+        let validator = create_test_validator();
+        let server = AuthenticatedMCPServer::new(validator);
+        let user = create_test_user(vec!["mcp:read".to_string()]); // wrong scope
+        let request = MCPRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(json!(2)),
+            method: "tools/call".to_string(),
+            params: Some(json!({ "name": "admin_get_dashboard_stats" })),
+        };
+
+        let response = server.handle_request(request, user).await;
+        assert_eq!(response.error, Some(MCPError::insufficient_permissions()));
     }
 }

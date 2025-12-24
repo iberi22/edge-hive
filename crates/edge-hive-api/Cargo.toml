@@ -36,6 +36,7 @@ surrealdb = { workspace = true, features = ["kv-mem"] }
 # Password hashing and security
 argon2 = { version = "0.5", features = ["std"] }
 rand = { version = "0.8", features = ["std", "std_rng"] }
+bcrypt = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Validation

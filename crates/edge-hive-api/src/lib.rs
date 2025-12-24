@@ -20,18 +20,21 @@
 //! - `/api/v1/edge/*` - Edge functions (WASM)
 //! - `/api/v1/realtime` - WebSocket upgrade
 //! - `/api/v1/mcp` - MCP JSON-RPC
+//! - `/api/v1/mcp/auth/token` - MCP OAuth2 token endpoint
 
 use axum::{
     routing::{get, post, put, delete},
-    Extension,
     Router,
 };
+use tower::ServiceBuilder;
 use tower_http::{
     cors::{CorsLayer, Any},
     trace::TraceLayer,
 };
 use tracing::info;
+use edge_hive_auth::AuthLayer;
 
+pub mod handlers;
 pub mod middleware;
 pub mod state;
 pub mod handlers;
@@ -41,6 +44,8 @@ pub use state::ApiState;
 /// Create the API router with all routes and middleware
 pub fn create_router(state: ApiState) -> Router {
     info!("Creating API Gateway router");
+
+    let auth_layer = AuthLayer::new(state.token_validator.as_ref().clone());
 
     // Core routes
     let health_routes = Router::new()
@@ -75,9 +80,15 @@ pub fn create_router(state: ApiState) -> Router {
         .route("/api/v1/realtime", get(handlers::realtime::ws_upgrade))
         .route("/api/v1/realtime/subscribe", post(handlers::realtime::subscribe));
 
-    // MCP routes (existing integration)
+    // MCP routes (with OAuth2 token endpoint)
     let mcp_routes = Router::new()
-        .route("/api/v1/mcp", post(handlers::mcp::json_rpc));
+        .route("/api/v1/mcp", post(handlers::mcp::json_rpc))
+        .route_layer(
+            ServiceBuilder::new()
+                .layer(axum::middleware::from_fn(AuthLayer::middleware))
+        )
+        .route("/api/v1/mcp/auth/token", post(handlers::mcp_auth::issue_mcp_token));
+
 
     // Combine all routes
     Router::new()
@@ -94,7 +105,7 @@ pub fn create_router(state: ApiState) -> Router {
                 .allow_headers(Any),
         )
         .layer(TraceLayer::new_for_http())
-        .layer(Extension(state))
+        .with_state(state)
 }
 
 #[cfg(test)]

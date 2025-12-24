@@ -120,6 +120,7 @@ cargo test --all
 
 - [Architecture Decision Records](/.✨/ARCHITECTURE.md)
 - [Agent Index](/.✨/AGENT_INDEX.md)
+- [Tor Integration Guide](/docs/TOR_INTEGRATION.md)
 - [API Reference](/docs/api/)
 - [Plugin Development](/docs/plugins/)
 

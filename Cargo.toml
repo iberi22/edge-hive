@@ -57,6 +57,7 @@ tokio = { workspace = true, features = ["full"] }
 edge-hive-identity.workspace = true
 edge-hive-core = { path = "crates/edge-hive-core" }
 edge-hive-discovery = { path = "crates/edge-hive-discovery" }
+edge-hive-tunnel = { path = "crates/edge-hive-tunnel" }
 edge-hive-auth = { path = "crates/edge-hive-auth", features = ["server"] }
 reqwest.workspace = true
 serde.workspace = true

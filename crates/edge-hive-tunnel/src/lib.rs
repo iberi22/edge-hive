@@ -4,6 +4,9 @@
 
 pub mod tor;
 
+// Re-export main Tor types for convenience
+pub use tor::{TorConfig, TorService};
+
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use thiserror::Error;
@@ -67,8 +70,8 @@ impl TunnelService {
                 self.start_cloudflared_quick(local_port).await
             }
             TunnelBackend::Tor => {
-                // TODO: Implement Tor in v1.1
-                Err(TunnelError::NotAvailable("Tor support coming in v1.1".into()))
+                // Use TorService for Tor onion services
+                self.start_tor(local_port).await
             }
         }
     }
@@ -137,6 +140,28 @@ impl TunnelService {
         info!("✅ Tunnel established (check logs for actual URL)");
 
         Ok(self.public_url.clone().unwrap())
+    }
+
+    async fn start_tor(&mut self, local_port: u16) -> Result<String, TunnelError> {
+        info!("🧅 Starting Tor onion service on port {}", local_port);
+
+        let config = TorConfig::default()
+            .map_err(|e| TunnelError::Start(format!("Failed to create Tor config: {}", e)))?
+            .with_local_port(local_port)
+            .with_enabled(true);
+
+        let mut tor_service = TorService::new(config);
+        let onion_address = tor_service
+            .start()
+            .await
+            .map_err(|e| TunnelError::Start(format!("Failed to start Tor service: {}", e)))?;
+
+        let onion_url = format!("http://{}.onion", onion_address);
+        self.public_url = Some(onion_url.clone());
+
+        info!("✅ Tor onion service established: {}", onion_url);
+
+        Ok(onion_url)
     }
 
     /// Get the public URL if tunnel is running

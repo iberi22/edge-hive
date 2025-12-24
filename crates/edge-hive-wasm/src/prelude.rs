@@ -59,16 +59,16 @@ impl Response {
 pub struct Cache;
 
 impl Cache {
-    pub async fn get(key: &str) -> Option<Value> {
+    pub async fn get(_key: &str) -> Option<Value> {
         // Implemented by runtime - calls edge-hive-cache
         None
     }
 
-    pub async fn set(key: &str, value: &Value, ttl_secs: u64) {
+    pub async fn set(_key: &str, _value: &Value, _ttl_secs: u64) {
         // Implemented by runtime
     }
 
-    pub async fn delete(key: &str) {
+    pub async fn delete(_key: &str) {
         // Implemented by runtime
     }
 }
@@ -77,24 +77,24 @@ impl Cache {
 pub struct DB;
 
 impl DB {
-    pub async fn query(sql: &str) -> Result<Vec<Value>, String> {
+    pub async fn query(_sql: &str) -> Result<Vec<Value>, String> {
         // Implemented by runtime - calls edge-hive-db (SurrealDB)
         Ok(vec![])
     }
 
-    pub async fn create(table: &str, data: &Value) -> Result<Value, String> {
+    pub async fn create(_table: &str, _data: &Value) -> Result<Value, String> {
         Ok(json!({}))
     }
 
-    pub async fn select(table: &str, id: &str) -> Result<Value, String> {
+    pub async fn select(_table: &str, _id: &str) -> Result<Value, String> {
         Ok(json!({}))
     }
 
-    pub async fn update(table: &str, id: &str, data: &Value) -> Result<Value, String> {
+    pub async fn update(_table: &str, _id: &str, _data: &Value) -> Result<Value, String> {
         Ok(json!({}))
     }
 
-    pub async fn delete(table: &str, id: &str) -> Result<(), String> {
+    pub async fn delete(_table: &str, _id: &str) -> Result<(), String> {
         Ok(())
     }
 }

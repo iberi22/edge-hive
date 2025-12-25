@@ -26,7 +26,7 @@ mime_guess.workspace = true
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 rustls = { version = "0.23", features = ["ring"] }
 rustls-pemfile = "2.2"
-rcgen = "0.13"                                               # For self-signed certificate generation
+rcgen = "0.14"                                               # For self-signed certificate generation
 
 # Serialization
 serde.workspace = true

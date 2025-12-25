@@ -40,7 +40,7 @@ bcrypt = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Validation
-validator = { version = "0.18", features = ["derive"] }
+validator = { version = "0.20", features = ["derive"] }
 
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }

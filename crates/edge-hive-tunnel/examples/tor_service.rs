@@ -1,10 +1,11 @@
-//! Example: Starting a Tor Onion Service
+//! Example: Using the Tor Client
 //!
-//! This example demonstrates how to use the TorService API to expose
-//! a local service through Tor.
+//! This example demonstrates how to use the TorService to connect to an
+//! onion service and fetch some data.
 
 use edge_hive_tunnel::{TorConfig, TorService};
 use std::path::PathBuf;
+use tokio::io::AsyncReadExt;
 use tracing::{info, Level};
 use tracing_subscriber;
 
@@ -15,40 +16,57 @@ async fn main() -> anyhow::Result<()> {
         .with_max_level(Level::INFO)
         .init();
 
-    info!("🚀 Starting Tor Onion Service Example");
+    info!("🚀 Starting Tor Client Example");
 
     // Create configuration
     let config = TorConfig {
         data_dir: PathBuf::from("./example-tor-data"),
-        local_port: 8080,
-        nickname: Some("example-node".to_string()),
         enabled: true,
     };
 
     // Create and start service
     let mut tor_service = TorService::new(config);
     
-    info!("🧅 Starting Tor service...");
-    match tor_service.start().await {
-        Ok(onion_address) => {
-            info!("✅ Onion service started successfully!");
-            info!("🧅 Your onion address: http://{}.onion", onion_address);
-            info!("📝 Share this address to allow anonymous access");
+    info!("🧅 Starting Tor client...");
+    if let Err(e) = tor_service.start().await {
+        eprintln!("❌ Failed to start Tor client: {}", e);
+        return Err(e.into());
+    }
+
+    info!("✅ Tor client started successfully!");
+
+    // Let's connect to the DuckDuckGo onion service
+    let onion_address = "duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion";
+    let port = 80;
+
+    info!("🧅 Connecting to DuckDuckGo onion service...");
+    match tor_service.connect_onion(onion_address, port).await {
+        Ok(mut stream) => {
+            info!("✅ Connected!");
             
-            // Keep service running for 30 seconds
-            info!("⏳ Service will run for 30 seconds...");
-            tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+            // Send a simple HTTP GET request
+            let request = format!(
+                "GET / HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+                onion_address
+            );
             
-            // Stop the service
-            info!("🛑 Stopping service...");
-            tor_service.stop().await?;
-            info!("✅ Service stopped");
+            tokio::io::AsyncWriteExt::write_all(&mut stream, request.as_bytes()).await?;
+
+            // Read the response
+            let mut response = String::new();
+            stream.read_to_string(&mut response).await?;
+
+            info!("📝 Received response (first 200 chars):\n{}", &response[..200]);
         }
         Err(e) => {
-            eprintln!("❌ Failed to start Tor service: {}", e);
-            return Err(e);
+            eprintln!("❌ Failed to connect to onion service: {}", e);
         }
     }
+
+    // Stop the service
+    info!("🛑 Stopping service...");
+    tor_service.stop().await?;
+    info!("✅ Service stopped");
 
     Ok(())
 }

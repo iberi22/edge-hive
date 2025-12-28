@@ -6,22 +6,18 @@ license.workspace = true
 description = "Tunneling support for Edge Hive (Cloudflare + Tor)"
 
 [dependencies]
-tokio.workspace = true
+tokio = { workspace = true, features = ["io-util"] }
+tokio-util = { version = "0.7", features = ["compat"] }
 futures.workspace = true
 serde.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
-# Tor Hidden Services (Direct implementation)
-tor-hsservice = "0.37"
-tor-rtcompat = { version = "0.37", features = ["tokio"] }
-tor-hscrypto = "0.37"
-ed25519-consensus.workspace = true
+# Tor Integration
+arti-client.workspace = true
+tor-rtcompat.workspace = true
 directories.workspace = true
-sha3.workspace = true
-data-encoding.workspace = true
-rand.workspace = true
 
 # Cloudflare Tunnel (placeholder until libcfd is available)
 # libcfd = "0.1"

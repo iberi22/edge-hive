@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Activity, ShieldAlert, Zap, Search, RefreshCw, BarChart3, Radar, Server, Cpu, Globe, AlertTriangle } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import LogViewer from '../components/LogViewer';
 
 const AnomalyRadar = () => {
     const [scannedPoints, setScannedPoints] = useState<{ x: number, y: number, intensity: number }[]>([]);
@@ -151,27 +152,7 @@ const Observability: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-slate-900/40 border border-white/5 rounded-xl p-6 backdrop-blur-md">
-                        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2 mb-6">
-                            <Activity size={16} className="text-hive-orange" />
-                            Global Event Stream
-                        </h3>
-                        <div className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar font-mono text-[10px]">
-                            {[
-                                { t: '12:04:01', msg: 'NEURAL_LOAD_BALANCER: shifting US-EAST ingress to US-WEST-02', type: 'info' },
-                                { t: '12:04:05', msg: 'ANOMALY_DETECTED: unusual query volume on table:posts [Score: 0.84]', type: 'warn' },
-                                { t: '12:04:12', msg: 'WASM_RUNTIME: optimized instruction pipeline for func:get_user_meta', type: 'info' },
-                                { t: '12:04:20', msg: 'RAFT_CONSENSUS: heartbeat sync complete [0.002ms delay]', type: 'info' },
-                                { t: '12:04:25', msg: 'GHOST_TRACE: instruction trace triggered by policy laboratory', type: 'info' },
-                                { t: '12:04:33', msg: 'RECOVERY_ENGINE: auto-balancing entropy in L2_WARM storage tier', type: 'info' },
-                            ].map((log, i) => (
-                                <div key={i} className={`p-3 rounded border flex gap-4 ${log.type === 'warn' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-slate-950 border-white/5 text-slate-400'}`}>
-                                    <span className="text-slate-600 font-bold">[{log.t}]</span>
-                                    <span>{log.msg}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <LogViewer />
                 </div>
 
                 <div className="space-y-8">

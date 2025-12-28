@@ -5,6 +5,7 @@ import { mockApi } from '../api';
 import { ApiKey, AccessLogEntry, Backup } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { useToast } from '../context/ToastContext';
+import ConfigEditor from '../components/ConfigEditor';
 
 const ApiKeyRow: React.FC<{ apiKey: ApiKey }> = ({ apiKey }) => {
   const [visible, setVisible] = useState(false);
@@ -445,12 +446,9 @@ const Settings: React.FC = () => {
         </div>
       )}
 
-      {/* General Placeholder */}
+      {/* General Content */}
       {activeTab === 'general' && (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-500 border border-dashed border-white/10 rounded-lg">
-          <Server size={32} className="mb-4 opacity-50" />
-          <p className="font-mono text-sm">General Server Settings</p>
-        </div>
+        <ConfigEditor />
       )}
 
     </div>

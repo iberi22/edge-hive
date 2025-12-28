@@ -5,8 +5,8 @@
 use std::sync::{Arc, Mutex};
 use tauri::{Manager, Emitter, AppHandle};
 use edge_hive_mcp::MCPServer;
-use edge_hive_wasm::PluginManager;
 use edge_hive_db::DatabaseService;
+use sysinfo::{System, Disks};
 
 // Module Declarations
 mod commands;
@@ -210,24 +210,45 @@ struct SystemMetric {
     time: String,
     cpu: f64,
     memory: f64,
-    latency: f64,
+    disk: f64,
 }
 
 fn spawn_metrics_loop(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
+        let mut sys = System::new_all();
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(2000));
+
         loop {
             interval.tick().await;
 
-            // Generate fake metrics
-            let metric = SystemMetric {
-                time: chrono::Local::now().format("%H:%M:%S").to_string(),
-                cpu: rand::random::<f64>() * 100.0,
-                memory: rand::random::<f64>() * 100.0,
-                latency: rand::random::<f64>() * 50.0,
+            // Refresh CPU and Memory data
+            sys.refresh_cpu_all();
+            sys.refresh_memory();
+
+            // Calculate CPU usage
+            // Note: The first reading might be 0, subsequent readings will be accurate.
+            let cpu_usage = sys.global_cpu_usage() as f64;
+
+            // Get memory usage in MB
+            let memory_usage = sys.used_memory() as f64 / 1024.0 / 1024.0;
+
+            // Calculate disk usage
+            let disks = Disks::new_with_refreshed_list();
+            let total_disk_space: u64 = disks.iter().map(|d| d.total_space()).sum();
+            let used_disk_space: u64 = disks.iter().map(|d| d.total_space() - d.available_space()).sum();
+            let disk_usage = if total_disk_space > 0 {
+                (used_disk_space as f64 / total_disk_space as f64) * 100.0
+            } else {
+                0.0
             };
 
-            // Emit event
+            let metric = SystemMetric {
+                time: chrono::Local::now().format("%H:%M:%S").to_string(),
+                cpu: cpu_usage,
+                memory: memory_usage,
+                disk: disk_usage,
+            };
+
             if let Err(e) = app.emit("system_metrics", &metric) {
                 eprintln!("Failed to emit metrics: {}", e);
             }

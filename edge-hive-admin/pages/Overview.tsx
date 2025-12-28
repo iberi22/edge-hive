@@ -268,7 +268,7 @@ const Overview: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard title="Processing Load" value={lastMetric.cpu.toFixed(1)} unit="%" trend="1.2%" icon={Activity} color="text-hive-orange" detail="CORE_POOL_8" />
                 <MetricCard title="Memory Residency" value={lastMetric.memory.toFixed(1)} unit="MB" trend="0.4%" icon={HardDrive} color="text-hive-cyan" detail="HEAP_NON_GC" />
-                <MetricCard title="Atomic Latency" value={lastMetric.latency.toFixed(0)} unit="μs" trend="-4" icon={Zap} color="text-purple-500" detail="SUB_MILLI_P99" />
+                <MetricCard title="Disk Usage" value={lastMetric.disk.toFixed(1)} unit="%" trend="0.1%" icon={HardDrive} color="text-purple-500" detail="STORAGE" />
                 <MetricCard title="Global Ingress" value="42.5" unit="k/s" trend="12%" icon={Globe} color="text-emerald-500" detail="NET_IO_SYNC" />
             </div>
 

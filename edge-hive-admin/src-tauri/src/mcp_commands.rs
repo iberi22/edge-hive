@@ -1,7 +1,6 @@
 use edge_hive_mcp::{DashboardStats, MCPRequest, MCPResponse, MCPServer, Node};
 use std::sync::Arc;
 use tauri::State;
-use tokio::sync::RwLock;
 
 pub struct MCPState {
     pub server: Arc<MCPServer>,

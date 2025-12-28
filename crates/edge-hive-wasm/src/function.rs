@@ -4,10 +4,14 @@
 
 use crate::host::HostContext;
 use crate::WasmError;
+use anyhow::Result;
 use serde_json::Value;
 use std::path::Path;
 use std::sync::Arc;
 use wasmtime::*;
+
+const MEMORY_LIMIT_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+const DEFAULT_FUEL: u64 = 1_000_000_000;
 
 /// Represents a loaded edge function ready for execution
 pub struct EdgeFunction<H: HostContext> {
@@ -16,20 +20,54 @@ pub struct EdgeFunction<H: HostContext> {
     host: Arc<H>,
 }
 
+/// Enforces memory limits on the Wasm store.
+struct StoreLimits {
+    remaining_memory: usize,
+}
+
+impl ResourceLimiter for StoreLimits {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        _maximum: Option<usize>,
+    ) -> Result<bool> {
+        let new_mem = desired.saturating_sub(current);
+        if new_mem > self.remaining_memory {
+            return Ok(false); // Deny the request
+        }
+        self.remaining_memory -= new_mem;
+        Ok(true)
+    }
+
+    fn table_growing(&mut self, _current: u32, _desired: u32, _maximum: Option<u32>) -> Result<bool> {
+        Ok(true) // Allow table growing for now
+    }
+}
+
+/// Holds the data for the Wasm store.
+struct StoreData<H: HostContext> {
+    host: Arc<H>,
+    limits: StoreLimits,
+}
+
 impl<H: HostContext> EdgeFunction<H> {
+    /// Creates a new Wasmtime engine with the correct configuration.
+    fn create_engine() -> Result<Engine, WasmError> {
+        let mut config = Config::new();
+        config.async_support(true);
+        config.consume_fuel(true);
+        Engine::new(&config).map_err(|e| WasmError::Load(e.to_string()))
+    }
+
     /// Load an edge function from a WASM file
     ///
     /// # Arguments
     /// * `path` - Path to the WASM file
     /// * `host` - Host context for database and logging
     pub fn load(path: &Path, host: Arc<H>) -> Result<Self, WasmError> {
-        let mut config = Config::new();
-        config.async_support(true);
-        let engine = Engine::new(&config)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
-        
-        let module = Module::from_file(&engine, path)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
+        let engine = Self::create_engine()?;
+        let module = Module::from_file(&engine, path).map_err(|e| WasmError::Load(e.to_string()))?;
 
         Ok(Self {
             engine,
@@ -45,14 +83,8 @@ impl<H: HostContext> EdgeFunction<H> {
     /// * `host` - Host context for database and logging
     pub fn from_bytes(bytes: &[u8], host: Arc<H>) -> Result<Self, WasmError> {
         crate::validate_wasm_bytes(bytes)?;
-
-        let mut config = Config::new();
-        config.async_support(true);
-        let engine = Engine::new(&config)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
-        
-        let module = Module::new(&engine, bytes)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
+        let engine = Self::create_engine()?;
+        let module = Module::new(&engine, bytes).map_err(|e| WasmError::Load(e.to_string()))?;
 
         Ok(Self {
             engine,
@@ -69,29 +101,32 @@ impl<H: HostContext> EdgeFunction<H> {
     /// # Returns
     /// JSON response from the function
     pub async fn execute(&self, request: Value) -> Result<Value, WasmError> {
-        // Create store with host context state
-        let mut store = Store::new(&self.engine, self.host.clone());
+        let store_data = StoreData {
+            host: self.host.clone(),
+            limits: StoreLimits {
+                remaining_memory: MEMORY_LIMIT_BYTES,
+            },
+        };
+        let mut store = Store::new(&self.engine, store_data);
+        store.limiter(|data| &mut data.limits);
+        store.set_fuel(DEFAULT_FUEL).map_err(|e| WasmError::Call(e.to_string()))?;
 
-        // Create linker with host functions
+
         let mut linker = Linker::new(&self.engine);
         self.link_host_functions(&mut linker)?;
 
-        // Instantiate the module
         let instance = linker
             .instantiate_async(&mut store, &self.module)
             .await
             .map_err(|e| WasmError::Instantiate(e.to_string()))?;
 
-        // Get memory for string passing
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or_else(|| WasmError::Call("No 'memory' export found".into()))?;
 
-        // Serialize request to JSON string
         let request_json = serde_json::to_string(&request)
             .map_err(|e| WasmError::Call(format!("Failed to serialize request: {}", e)))?;
 
-        // Allocate memory for request in WASM
         let allocate = instance
             .get_typed_func::<i32, i32>(&mut store, "allocate")
             .map_err(|e| WasmError::Call(format!("No 'allocate' export: {}", e)))?;
@@ -102,12 +137,9 @@ impl<H: HostContext> EdgeFunction<H> {
             .await
             .map_err(|e| WasmError::Call(format!("allocate failed: {}", e)))?;
 
-        // Write request data to WASM memory
-        let mem_data = memory.data_mut(&mut store);
-        mem_data[req_ptr as usize..(req_ptr as usize + req_len as usize)]
-            .copy_from_slice(request_json.as_bytes());
+        memory.write(&mut store, req_ptr as usize, request_json.as_bytes())
+            .map_err(|e| WasmError::Call(format!("Failed to write to memory: {}", e)))?;
 
-        // Call the handle_request function
         let handle_request = instance
             .get_typed_func::<(i32, i32), i64>(&mut store, "handle_request")
             .map_err(|e| WasmError::Call(format!("No 'handle_request' export: {}", e)))?;
@@ -117,130 +149,86 @@ impl<H: HostContext> EdgeFunction<H> {
             .await
             .map_err(|e| WasmError::Call(format!("handle_request failed: {}", e)))?;
 
-        // Unpack ptr and len from i64
         let resp_ptr = (result & 0xFFFFFFFF) as i32;
         let resp_len = (result >> 32) as i32;
 
-        // Read response data
-        let response_json = {
-            let mem_data = memory.data(&store);
-            let response_bytes = &mem_data[resp_ptr as usize..(resp_ptr as usize + resp_len as usize)];
-            std::str::from_utf8(response_bytes)
-                .map_err(|e| WasmError::Call(format!("Invalid UTF-8 in response: {}", e)))?
-                .to_string()
-        };
+        let mut buffer = vec![0u8; resp_len as usize];
+        memory.read(&store, resp_ptr as usize, &mut buffer)
+            .map_err(|e| WasmError::Call(format!("Failed to read from memory: {}", e)))?;
 
-        // Deallocate request memory
-        let deallocate = instance
-            .get_typed_func::<(i32, i32), ()>(&mut store, "deallocate")
-            .ok();
+        let response_json = String::from_utf8(buffer)
+            .map_err(|e| WasmError::Call(format!("Invalid UTF-8 in response: {}", e)))?;
 
-        if let Some(dealloc) = deallocate {
-            let _ = dealloc.call_async(&mut store, (req_ptr, req_len)).await;
+        if let Some(deallocate) = instance.get_typed_func::<(i32, i32), ()>(&mut store, "deallocate").ok() {
+            let _ = deallocate.call_async(&mut store, (req_ptr, req_len)).await;
         }
 
-        // Parse and return response
         serde_json::from_str(&response_json)
             .map_err(|e| WasmError::Call(format!("Failed to parse response JSON: {}", e)))
     }
 
     /// Link host functions to the linker
-    fn link_host_functions(&self, linker: &mut Linker<Arc<H>>) -> Result<(), WasmError> {
-        // db_query(sql_ptr: i32, sql_len: i32) -> result_ptr: i32
-        linker
-            .func_wrap_async(
-                "edge_hive",
-                "db_query",
-                |mut caller: Caller<'_, Arc<H>>, (sql_ptr, sql_len): (i32, i32)| {
-                    Box::new(async move {
-                        let host = caller.data().clone();
+    fn link_host_functions(&self, linker: &mut Linker<StoreData<H>>) -> Result<(), WasmError> {
+        linker.func_wrap2_async(
+            "edge_hive",
+            "db_query",
+            |mut caller: Caller<'_, StoreData<H>>, sql_ptr: i32, sql_len: i32| {
+                Box::new(async move {
+                    let host = caller.data().host.clone();
+                    let memory = caller.get_export("memory").and_then(|e| e.into_memory()).ok_or_else(|| anyhow::anyhow!("No memory export"))?;
 
-                        // Read SQL from memory
-                        let memory = caller
-                            .get_export("memory")
-                            .and_then(|e| e.into_memory())
-                            .ok_or_else(|| anyhow::anyhow!("No memory export"))?;
+                    let mut buffer = vec![0u8; sql_len as usize];
+                    memory.read(&caller, sql_ptr as usize, &mut buffer)?;
+                    let sql = std::str::from_utf8(&buffer)?;
 
-                        let mem_data = memory.data(&caller);
-                        let sql_bytes =
-                            &mem_data[sql_ptr as usize..(sql_ptr as usize + sql_len as usize)];
-                        let sql = std::str::from_utf8(sql_bytes)?;
+                    let result = host.query(sql);
+                    let result_json = match result {
+                        Ok(data) => serde_json::json!({ "ok": data }),
+                        Err(e) => serde_json::json!({ "error": e.to_string() }),
+                    };
+                    let result_str = result_json.to_string();
+                    let result_len = result_str.len() as i32;
 
-                        // Execute query via host
-                        let result = host.query(sql);
+                    let allocate = caller.get_export("allocate").and_then(|e| e.into_func()).ok_or_else(|| anyhow::anyhow!("No allocate export"))?;
 
-                        // Serialize result
-                        let result_json = serde_json::to_string(&result)?;
-                        let result_len = result_json.len() as i32;
+                    let mut results = [Val::I32(0)];
+                    allocate.call_async(&mut caller, &[Val::I32(result_len + 4)], &mut results).await?;
+                    let result_ptr = results[0].unwrap_i32();
 
-                        // Allocate memory for result
-                        let allocate = caller
-                            .get_export("allocate")
-                            .and_then(|e| e.into_func())
-                            .ok_or_else(|| anyhow::anyhow!("No allocate export"))?;
+                    memory.write(&mut caller, result_ptr as usize, &result_len.to_le_bytes())?;
+                    memory.write(&mut caller, (result_ptr + 4) as usize, result_str.as_bytes())?;
 
-                        let mut results = [Val::I32(0)];
-                        allocate
-                            .call_async(&mut caller, &[Val::I32(result_len + 4)], &mut results)
-                            .await?;
+                    Ok(result_ptr + 4)
+                })
+            },
+        ).map_err(|e| WasmError::Instantiate(e.to_string()))?;
 
-                        let result_ptr = results[0].unwrap_i32();
+        linker.func_wrap3_async(
+            "edge_hive",
+            "log",
+            |mut caller: Caller<'_, StoreData<H>>, level: i32, msg_ptr: i32, msg_len: i32| {
+                Box::new(async move {
+                    let host = caller.data().host.clone();
+                    let memory = caller.get_export("memory").and_then(|e| e.into_memory()).ok_or_else(|| anyhow::anyhow!("No memory export"))?;
 
-                        // Write result length and data
-                        let memory = caller
-                            .get_export("memory")
-                            .and_then(|e| e.into_memory())
-                            .ok_or_else(|| anyhow::anyhow!("No memory export"))?;
+                    let mut buffer = vec![0u8; msg_len as usize];
+                    memory.read(&caller, msg_ptr as usize, &mut buffer)?;
+                    let msg = std::str::from_utf8(&buffer)?;
 
-                        let mem_data = memory.data_mut(&mut caller);
-                        mem_data[result_ptr as usize..result_ptr as usize + 4]
-                            .copy_from_slice(&result_len.to_le_bytes());
-                        mem_data[result_ptr as usize + 4
-                            ..result_ptr as usize + 4 + result_len as usize]
-                            .copy_from_slice(result_json.as_bytes());
+                    let log_level = match level {
+                        0 => crate::host::LogLevel::Trace,
+                        1 => crate::host::LogLevel::Debug,
+                        2 => crate::host::LogLevel::Info,
+                        3 => crate::host::LogLevel::Warn,
+                        _ => crate::host::LogLevel::Error,
+                    };
 
-                        Ok(result_ptr + 4)
-                    })
-                },
-            )
-            .map_err(|e| WasmError::Instantiate(e.to_string()))?;
+                    host.log(log_level, msg);
 
-        // log(level: i32, msg_ptr: i32, msg_len: i32)
-        linker
-            .func_wrap_async(
-                "edge_hive",
-                "log",
-                |mut caller: Caller<'_, Arc<H>>, (level, msg_ptr, msg_len): (i32, i32, i32)| {
-                    Box::new(async move {
-                        let host = caller.data().clone();
-
-                        // Read message from memory
-                        let memory = caller
-                            .get_export("memory")
-                            .and_then(|e| e.into_memory())
-                            .ok_or_else(|| anyhow::anyhow!("No memory export"))?;
-
-                        let mem_data = memory.data(&caller);
-                        let msg_bytes =
-                            &mem_data[msg_ptr as usize..(msg_ptr as usize + msg_len as usize)];
-                        let msg = std::str::from_utf8(msg_bytes)?;
-
-                        // Convert level and log
-                        let log_level = match level {
-                            0 => crate::host::LogLevel::Trace,
-                            1 => crate::host::LogLevel::Debug,
-                            2 => crate::host::LogLevel::Info,
-                            3 => crate::host::LogLevel::Warn,
-                            _ => crate::host::LogLevel::Error,
-                        };
-
-                        host.log(log_level, msg);
-
-                        Ok(())
-                    })
-                },
-            )
-            .map_err(|e| WasmError::Instantiate(e.to_string()))?;
+                    Ok(())
+                })
+            },
+        ).map_err(|e| WasmError::Instantiate(e.to_string()))?;
 
         Ok(())
     }
@@ -253,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_edge_function_from_invalid_bytes() {
-        let host = Arc::new(NoOpHostContext);
+        let host = Arc::new(NoOpHostContext::new());
         let result = EdgeFunction::from_bytes(&[0x00, 0x01, 0x02], host);
         assert!(result.is_err());
     }

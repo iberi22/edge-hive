@@ -35,7 +35,7 @@ impl TestHostContext {
 }
 
 impl HostContext for TestHostContext {
-    fn query(&self, sql: &str) -> Result<serde_json::Value, String> {
+    fn query(&self, sql: &str) -> anyhow::Result<serde_json::Value> {
         self.queries.lock().unwrap().push(sql.to_string());
         Ok(json!({
             "result": "ok",

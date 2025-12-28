@@ -23,6 +23,7 @@ impl<H: HostContext> WasmRuntime<H> {
         config.wasm_bulk_memory(true);
         config.cranelift_opt_level(OptLevel::Speed);
         config.async_support(true);
+        config.consume_fuel(true);
 
         let engine = Engine::new(&config)
             .context("Failed to create Wasmtime engine")?;

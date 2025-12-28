@@ -245,9 +245,10 @@ const Overview: React.FC = () => {
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
-                        <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">Global Cluster Health: Optimal</span>
+                        <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">Free Forever Community Edition</span>
                     </div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter">COCKPIT <span className="text-hive-orange text-2xl">v0.4.2</span></h1>
+                    <h1 className="text-4xl font-black text-white tracking-tighter">Welcome to Edge Hive</h1>
+                    <p className="text-slate-400 mt-2">Your sovereign compute node is running.</p>
                 </div>
                 <div className="flex gap-4">
                     <div className="text-right">

@@ -107,7 +107,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, currentView
                         <div className="w-8 h-8 rounded bg-gradient-to-br from-hive-orange to-red-600 flex items-center justify-center shadow-neon-orange">
                             <Box size={20} className="text-white" />
                         </div>
-                        <h1 className="font-bold tracking-tight text-white leading-tight uppercase">Edge Hive</h1>
+                        <div>
+                            <h1 className="font-bold tracking-tight text-white leading-tight uppercase">Edge Hive</h1>
+                            <span className="text-[9px] font-mono text-emerald-400">Community Edition</span>
+                        </div>
                     </div>
                     <button className="md:hidden text-slate-400" onClick={() => setIsMobileMenuOpen(false)}><X size={20} /></button>
                 </div>

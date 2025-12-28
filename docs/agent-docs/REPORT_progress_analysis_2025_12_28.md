@@ -15,10 +15,10 @@ El enfoque actual está en la transición hacia un modelo "Free-to-Use", consoli
 
 | Iniciativa | Estado | Progreso Est. | Notas |
 |:-----------|:-------|:--------------|:------|
-| **Eliminación Stripe** | 🟢 Completado | 95% | Lógica de cobro reemplazada por stubs "Free Tier". Falta validación final de UI. |
-| **Edge Functions V2** | 🟡 En Progreso | 20% | Actualización de motor WASM pendiente. Uso actual: `wasmtime v26`. |
-| **Tor V2** | 🔴 Pendiente | 0% | Issue creado, pero sin implementación detectable en `edge-hive-tunnel`. |
-| **Admin UI Real** | 🟡 En Progreso | 40% | Comandos Tauri conectando parcialmente a lógica real. Muchos componentes aún usan datos simulados (`spawn_metrics_loop`). |
+| **Eliminación Stripe** | 🟢 Completado | 100% | PR #122 merged. UI "Community Edition" activa. |
+| **Edge Functions V2** | 🟡 En Progreso | 20% | PR #125 rechazado por downgrade. Se solicitó corrección en Issue #120. |
+| **Tor V2** | 🟢 Completado | 100% | PR #123 merged. Migración a `arti` completada. |
+| **Admin UI Real** | 🟢 Completado | 90% | PR #126 merged. Métricas reales activas. Falta editor de config (#127). |
 
 ---
 

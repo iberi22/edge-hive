@@ -50,7 +50,7 @@ pub async fn get_available_plans() -> Result<Vec<Plan>, String> {
 }
 
 #[tauri::command]
-pub async fn create_checkout_session(plan: String) -> Result<String, String> {
+pub async fn create_checkout_session(_plan: String) -> Result<String, String> {
     Ok("https://checkout.stripe.com/...".to_string())
 }
 

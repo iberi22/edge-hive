@@ -1,5 +1,5 @@
 use tauri::State;
-use edge_hive_auth::{TokenGenerator, JwtKeys};
+use edge_hive_auth::TokenGenerator;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,7 +23,6 @@ impl AuthState {
     pub fn new() -> Self {
         // In a real app we would load keys from disk or env
         // Using arbitrary secret for now
-        let secret = vec![0u8; 32]; // Or use a proper random generation if uuid/rand available
         // Or if JwtKeys::generate_secret() exists:
         // let secret = JwtKeys::generate_secret();
         // But simpler to just use a fixed buffer since this is a stub/demo
@@ -38,7 +37,7 @@ impl AuthState {
 pub async fn login(
     _state: State<'_, AuthState>,
     email: String,
-    _password: String
+    _password: String,
 ) -> Result<AuthResponse, String> {
     // Stub implementation - accepts any password
     // In real implementation: verify password hash from DB
@@ -60,7 +59,7 @@ pub async fn login(
 pub async fn register(
     _state: State<'_, AuthState>,
     email: String,
-    _password: String
+    _password: String,
 ) -> Result<AuthResponse, String> {
     // Stub implementation
     let user = User {

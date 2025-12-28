@@ -3,7 +3,6 @@ use std::io::{BufRead, BufReader, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{AppHandle, Emitter, Manager};
-use std::process::{Command, Stdio};
 
 #[derive(Clone, serde::Serialize)]
 struct TerminalOutput {

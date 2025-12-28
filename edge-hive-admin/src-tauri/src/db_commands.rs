@@ -34,7 +34,7 @@ pub async fn db_execute(
 ) -> Result<String, String> {
     state
         .service
-        .query(&sql)
+        .query_json(&sql)
         .await
         .map(|_| "OK".to_string())
         .map_err(|e| e.to_string())

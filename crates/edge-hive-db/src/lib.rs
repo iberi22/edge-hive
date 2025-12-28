@@ -5,6 +5,7 @@
 pub mod session;
 pub mod user;
 
+use crate::user::StoredUser;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
 use std::str::FromStr;

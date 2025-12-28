@@ -33,8 +33,6 @@ impl From<StoredTask> for TaskDto {
 
 impl From<TaskDto> for StoredTask {
     fn from(dto: TaskDto) -> Self {
-        use std::str::FromStr;
-        
         // Parse datetime strings or use current time as fallback
         let due_date = chrono::DateTime::parse_from_rfc3339(&dto.due_date)
             .or_else(|_| chrono::DateTime::parse_from_str(&dto.due_date, "%+"))

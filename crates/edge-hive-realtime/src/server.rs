@@ -1,6 +1,7 @@
 //! Real-time WebSocket server (initial implementation)
 
 use crate::protocol::{ClientMessage, ServerMessage};
+use crate::system_monitor::SystemMonitor;
 use anyhow::Result;
 use axum::extract::ws::{Message as AxumMessage, WebSocket};
 use dashmap::DashMap;
@@ -48,12 +49,14 @@ pub struct RealtimeServer {
 
 impl RealtimeServer {
     pub fn new(config: RealtimeServerConfig) -> Self {
-        Self {
+        let server = Self {
             config,
             topics: Arc::new(DashMap::new()),
             db: None,
             live_tasks: Arc::new(DashMap::new()),
-        }
+        };
+        server.spawn_metrics_loop();
+        server
     }
 
     pub fn with_db(mut self, db: Arc<DatabaseService>) -> Self {
@@ -112,6 +115,32 @@ impl RealtimeServer {
         self.topics.insert(topic.to_string(), tx.clone());
         tx
     }
+
+    fn spawn_metrics_loop(&self) {
+        let topics = self.topics.clone();
+        tokio::spawn(async move {
+            let mut monitor = SystemMonitor::new();
+            loop {
+                let metrics = monitor.refresh();
+                if let Some(topic) = topics.get("system_metrics") {
+                    match serde_json::to_value(metrics) {
+                        Ok(data) => {
+                            let event = ServerMessage::Event {
+                                topic: "system_metrics".to_string(),
+                                action: "update".to_string(),
+                                data,
+                            };
+                            let _ = topic.send(event);
+                        }
+                        Err(e) => {
+                            warn!("Failed to serialize system metrics: {}", e);
+                        }
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        });
+    }
 }
 
 async fn handle_connection(
@@ -161,6 +190,9 @@ async fn handle_connection(
                     .send(Message::Text(serde_json::to_string(&ServerMessage::Pong)?.into()));
             }
             Ok(ClientMessage::Subscribe { topic, filter: _ }) => {
+                if &topic == "system_metrics" {
+                    info!("Client subscribed to system_metrics");
+                }
                 if subs.len() >= max_subs {
                     let err = ServerMessage::Error {
                         message: format!("Too many subscriptions (max {max_subs})"),

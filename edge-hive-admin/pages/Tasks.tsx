@@ -5,7 +5,7 @@ import {
   ChevronDown, ArrowUp, ArrowDown, RefreshCw, MoreVertical, Briefcase,
   Ghost, Lock, Zap
 } from 'lucide-react';
-import { tauriApi } from '../api';
+import { api as tauriApi } from '../api';
 import { SystemTask } from '../types';
 import { useToast } from '../context/ToastContext';
 

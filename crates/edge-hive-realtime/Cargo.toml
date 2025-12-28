@@ -26,6 +26,9 @@ tokio-tungstenite = "0.28"
 # Concurrency
 dashmap = "6"
 
+# System metrics
+sysinfo = "0.30.12"
+
 # Internal
 edge-hive-db = { path = "../edge-hive-db" }
 

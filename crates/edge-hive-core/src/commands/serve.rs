@@ -39,6 +39,10 @@ pub struct ServeArgs {
     /// Hostname for TLS certificate
     #[arg(long, default_value = "localhost")]
     pub hostname: String,
+
+    /// Enable Tor onion service
+    #[arg(long)]
+    pub onion: bool,
 }
 
 /// The network behaviour for the discovery service.
@@ -170,18 +174,32 @@ pub async fn run(
     };
 
     // Initialize tunnel service
-    let tunnel = if args.tunnel {
+    let tunnel = if args.tunnel || args.onion {
         info!("🚇 Starting tunnel service...");
-        let mut tunnel = TunnelService::new(TunnelBackend::Cloudflared);
+        let backend = if args.onion {
+            TunnelBackend::Tor
+        } else {
+            TunnelBackend::Cloudflared
+        };
 
-        match tunnel.start_quick(args.port).await {
+        let mut tunnel = TunnelService::new(backend);
+
+        match tunnel.start(args.port).await {
             Ok(url) => {
-                println!("✅ Tunnel: {}", url);
+                if args.onion {
+                    println!("✅ Onion Service: {}", url);
+                } else {
+                    println!("✅ Tunnel: {}", url);
+                }
                 Some(tunnel)
             }
             Err(e) => {
                 warn!("Failed to start tunnel: {}", e);
-                println!("⚠️  Tunnel: Failed ({})", e);
+                if args.onion {
+                    println!("⚠️  Onion Service: Failed ({})", e);
+                } else {
+                    println!("⚠️  Tunnel: Failed ({})", e);
+                }
                 None
             }
         }

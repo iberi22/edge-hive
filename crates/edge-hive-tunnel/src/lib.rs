@@ -133,15 +133,13 @@ impl TunnelService {
         let config = TorConfig::new(data_dir, true);
         let mut tor_service = TorService::new(config);
 
-        tor_service.start().await?;
+        let onion_address = tor_service.start().await?;
 
         self.state = TunnelState::Tor(tor_service);
+        self.public_url = Some(format!("{}.onion", onion_address));
 
-        let message = "Tor client started successfully.".to_string();
-        self.public_url = None; // Tor client doesn't have a single public URL
-
-        info!("✅ {}", message);
-        Ok(message)
+        info!("✅ {}", self.public_url.as_ref().unwrap());
+        Ok(self.public_url.clone().unwrap())
     }
 
     /// Connect to a Tor onion service. This requires the backend to be `TunnelBackend::Tor`.

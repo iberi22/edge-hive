@@ -15,8 +15,13 @@ thiserror.workspace = true
 tracing.workspace = true
 
 # Tor Integration
-arti-client.workspace = true
-tor-rtcompat.workspace = true
+arti-client = { workspace = true, features = ["onion-service-service"] }
+tor-rtcompat = { workspace = true, features = ["tokio", "rustls"] }
+tor-hsservice = { version = "0.37.0" }
+tor-hscrypto = { version = "0.37.0" }
+ed25519-consensus = { workspace = true }
+sha3 = { workspace = true }
+data-encoding = { workspace = true }
 directories.workspace = true
 
 # Cloudflare Tunnel (placeholder until libcfd is available)

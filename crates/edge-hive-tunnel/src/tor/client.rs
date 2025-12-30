@@ -28,20 +28,42 @@ pub struct TorConfig {
     pub data_dir: PathBuf,
     /// Whether the Tor client should be enabled.
     pub enabled: bool,
+    /// Optional nickname for the hidden service.
+    pub nickname: Option<String>,
+    /// Local port to forward onion traffic to.
+    pub local_port: u16,
 }
 
 impl TorConfig {
     /// Create a new TorConfig, resolving the data directory.
     pub fn new(data_dir: PathBuf, enabled: bool) -> Self {
-        Self { data_dir, enabled }
+        Self {
+            data_dir,
+            enabled,
+            nickname: None,
+            local_port: 8080,
+        }
+    }
+
+    /// Set the nickname for the hidden service.
+    pub fn with_nickname(mut self, nickname: String) -> Self {
+        self.nickname = Some(nickname);
+        self
+    }
+
+    /// Set the local port for the hidden service.
+    pub fn with_local_port(mut self, port: u16) -> Self {
+        self.local_port = port;
+        self
     }
 }
 
 /// Main Tor service manager.
 pub struct TorService {
     config: TorConfig,
-    client: Option<TorClient<tor_rtcompat::tokio::TokioRustlsRuntime>>,
+    client: Option<TorClient<tor_rtcompat::PreferredRuntime>>,
     running: bool,
+    onion_address: Option<String>,
 }
 
 impl TorService {
@@ -51,13 +73,14 @@ impl TorService {
             config,
             client: None,
             running: false,
+            onion_address: None,
         }
     }
 
     /// Start the Tor client and bootstrap a connection to the Tor network.
-    pub async fn start(&mut self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<String> {
         if !self.config.enabled || self.running {
-            return Ok(());
+            return self.onion_address.clone().ok_or_else(|| anyhow!("Tor client already running without onion service"));
         }
 
         info!("🧅 Starting Tor client...");
@@ -77,17 +100,24 @@ impl TorService {
 
         let config = config_builder.build()?;
 
-        let runtime = tor_rtcompat::tokio::TokioRustlsRuntime::create()?;
+        let runtime = tor_rtcompat::PreferredRuntime::current()?;
         let client = TorClient::with_runtime(runtime)
             .config(config)
             .create_unbootstrapped()?;
 
         client.bootstrap().await?;
 
-        self.client = Some(client);
+        self.client = Some(client.clone());
         self.running = true;
-        info!("✅ Tor client bootstrapped and ready.");
-        Ok(())
+        info!("✅ Tor client bootstrapped.");
+
+        // Launch Onion Service
+        let onion_manager = super::OnionService::new(self.config.clone(), client);
+        let onion_address = onion_manager.launch().await?;
+        self.onion_address = Some(onion_address.clone());
+
+        info!("✅ Tor Onion Service active at: {}.onion", onion_address);
+        Ok(onion_address)
     }
 
     /// Stop the Tor service.
@@ -119,6 +149,11 @@ impl TorService {
             }
             None => TorStatus::Idle,
         }
+    }
+
+    /// Get the onion address if the service is running.
+    pub fn onion_address(&self) -> Option<&str> {
+        self.onion_address.as_deref()
     }
 
     /// Connect to a given onion service address and port.

@@ -5,7 +5,6 @@
 pub mod session;
 pub mod user;
 
-use crate::user::StoredUser;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::path::Path;
 use std::str::FromStr;
@@ -400,6 +399,7 @@ impl DatabaseService {
         created.ok_or(DbError::Query("Failed to create session".into()))
     }
 
+
     /// Get a session by refresh token hash
     pub async fn get_session_by_token(
         &self,
@@ -462,6 +462,12 @@ impl DatabaseService {
     ) -> Result<impl futures::Stream<Item = Result<surrealdb::Notification<LiveRecord>, surrealdb::Error>>, DbError> {
         let stream = self.db.select(table).live().await?;
         Ok(stream)
+    }
+
+    pub async fn query(&self, sql: &str) -> Result<surrealdb::Response, DbError> {
+        self.db.query(sql).await.map_err(|e| DbError::Query(e.to_string()))
+    }
+
     }
 }
 

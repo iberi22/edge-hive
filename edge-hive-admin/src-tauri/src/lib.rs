@@ -25,7 +25,7 @@ pub mod cache_commands;
 pub mod tunnel_commands;
 pub mod settings_commands;
 pub mod cloud_commands;
-mod task_commands;
+pub mod task_commands;
 
 
 // Use Commands & States

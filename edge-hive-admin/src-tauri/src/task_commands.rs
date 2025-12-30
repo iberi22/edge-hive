@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use tauri::State;
 use crate::db_commands::DatabaseState;
 use edge_hive_db::StoredTask;
-use serde::{Deserialize, Serialize};
 
 /// Frontend-friendly task representation with string ID
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub struct TaskDto {
 impl From<StoredTask> for TaskDto {
     fn from(task: StoredTask) -> Self {
         TaskDto {
-            id: task.id.map(|t| t.id.to_raw()).unwrap_or_default(),
+            id: task.id.map(|t| t.id.to_raw()).unwrap_or_else(|| "".to_string()),
             title: task.title,
             description: task.description,
             status: task.status,
@@ -38,12 +38,12 @@ impl From<TaskDto> for StoredTask {
             .or_else(|_| chrono::DateTime::parse_from_str(&dto.due_date, "%+"))
             .map(|dt| surrealdb::sql::Datetime::from(dt.with_timezone(&chrono::Utc)))
             .unwrap_or_else(|_| surrealdb::sql::Datetime::from(chrono::Utc::now()));
-            
+
         let created_at = chrono::DateTime::parse_from_rfc3339(&dto.created_at)
             .or_else(|_| chrono::DateTime::parse_from_str(&dto.created_at, "%+"))
             .map(|dt| surrealdb::sql::Datetime::from(dt.with_timezone(&chrono::Utc)))
             .unwrap_or_else(|_| surrealdb::sql::Datetime::from(chrono::Utc::now()));
-        
+
         StoredTask {
             id: if dto.id.is_empty() {
                 None
@@ -65,7 +65,7 @@ impl From<TaskDto> for StoredTask {
 pub async fn get_tasks(
     state: State<'_, DatabaseState>,
 ) -> Result<Vec<TaskDto>, String> {
-    let tasks = state.service.get_tasks().await.map_err(|e| e.to_string())?;
+    let tasks = state.db_service.get_tasks().await.map_err(|e| e.to_string())?;
     Ok(tasks.into_iter().map(TaskDto::from).collect())
 }
 
@@ -75,7 +75,7 @@ async fn save_task_internal(
     task: TaskDto,
 ) -> Result<TaskDto, String> {
     let stored_task: StoredTask = task.into();
-    let saved = state.service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
+    let saved = state.db_service.save_task(&stored_task).await.map_err(|e| e.to_string())?;
     Ok(TaskDto::from(saved))
 }
 
@@ -100,7 +100,7 @@ pub async fn delete_task(
     state: State<'_, DatabaseState>,
     id: String,
 ) -> Result<(), String> {
-    state.service.delete_task(&id).await.map_err(|e| e.to_string())
+    state.db_service.delete_task(&id).await.map_err(|e| e.to_string())
 }
 
 // Keep save_task for backward compatibility

@@ -30,6 +30,7 @@ chrono.workspace = true
 rand.workspace = true
 which.workspace = true
 base64 = "0.22"
+surrealdb = { version = "1.0.0-beta.9", features = ["kv-mem"] }
 hex = "0.4"
 flate2 = "1.0"
 tar = "0.4"

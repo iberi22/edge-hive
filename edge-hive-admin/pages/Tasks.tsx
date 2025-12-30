@@ -10,7 +10,6 @@ import { SystemTask } from '../types';
 import { useToast } from '../context/ToastContext';
 
 const Tasks: React.FC = () => {
-  // Fix: useToast returns the toast object directly
   const toast = useToast();
   const [tasks, setTasks] = useState<SystemTask[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<SystemTask[]>([]);
@@ -21,6 +20,9 @@ const Tasks: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'due_date' | 'created_at' | 'priority'>('due_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<SystemTask | null>(null);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -61,6 +63,44 @@ const Tasks: React.FC = () => {
     setFilteredTasks(result);
   }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy, sortOrder]);
 
+  const handleCreate = () => {
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (task: SystemTask) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await tauriApi.deleteTask(id);
+        toast.success('Task deleted successfully');
+        fetchTasks();
+      } catch (e) {
+        toast.error('Failed to delete task');
+      }
+    }
+  };
+
+  const handleSave = async (task: SystemTask) => {
+    try {
+      if (selectedTask) {
+        await tauriApi.updateTask(task);
+        toast.success('Task updated successfully');
+      } else {
+        await tauriApi.createTask(task);
+        toast.success('Task created successfully');
+      }
+      fetchTasks();
+      setIsModalOpen(false);
+    } catch (e) {
+      toast.error('Failed to save task');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed': return <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"><CheckCircle size={10} /> Completed</span>;
@@ -91,7 +131,7 @@ const Tasks: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button onClick={fetchTasks} className="p-2 bg-slate-900 border border-white/10 rounded hover:bg-white/5 text-slate-400 hover:text-white transition"><RefreshCw size={18} /></button>
-          <button className="px-4 py-2 bg-hive-cyan hover:bg-cyan-600 text-black font-bold text-sm rounded transition shadow-neon-cyan flex items-center gap-2">+ New Deployment</button>
+          <button onClick={handleCreate} className="px-4 py-2 bg-hive-cyan hover:bg-cyan-600 text-black font-bold text-sm rounded transition shadow-neon-cyan flex items-center gap-2">+ New Task</button>
         </div>
       </div>
 
@@ -151,15 +191,146 @@ const Tasks: React.FC = () => {
                   <td className="p-4">{getStatusBadge(task.status)}</td>
                   <td className="p-4">{getPriorityBadge(task.priority)}</td>
                   <td className="p-4 font-mono text-[10px] text-slate-500">{task.assignee}</td>
-                  <td className="p-4 text-right"><button className="text-slate-600 hover:text-white transition"><MoreVertical size={16} /></button></td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => handleEdit(task)} className="text-slate-600 hover:text-white transition">Edit</button>
+                      <button onClick={() => handleDelete(task.id)} className="text-slate-600 hover:text-red-500 transition">Delete</button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+      {isModalOpen && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSave}
+        />
+      )}
     </div>
   );
 };
 
 export default Tasks;
+
+interface TaskModalProps {
+  task: SystemTask | null;
+  onClose: () => void;
+  onSave: (task: SystemTask) => void;
+}
+
+const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave }) => {
+  const [formData, setFormData] = useState<SystemTask>(
+    task || {
+      id: '',
+      title: '',
+      description: '',
+      status: 'pending',
+      priority: 'medium',
+      due_date: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      assignee: '',
+    }
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-slate-900 border border-white/10 rounded-lg p-8 w-full max-w-lg">
+        <h2 className="text-2xl font-bold text-white mb-4">{task ? 'Edit Task' : 'Create Task'}</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400">Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full bg-slate-950 border border-white/10 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-hive-orange/50"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full bg-slate-950 border border-white/10 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-hive-orange/50"
+              rows={3}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-400">Status</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full bg-slate-950 border border-white/10 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-hive-orange/50"
+              >
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-400">Priority</label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                className="w-full bg-slate-950 border border-white/10 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-hive-orange/50"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400">Due Date</label>
+            <input
+              type="datetime-local"
+              name="due_date"
+              value={formData.due_date}
+              onChange={handleChange}
+              className="w-full bg-slate-950 border border-white/10 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-hive-orange/50"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800 text-white font-bold text-sm rounded hover:bg-slate-700 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-hive-cyan text-black font-bold text-sm rounded hover:bg-cyan-600 transition"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};

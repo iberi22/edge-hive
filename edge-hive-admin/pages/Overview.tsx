@@ -13,8 +13,8 @@ import {
     Legend
 } from 'recharts';
 import { Activity, Server, Zap, Globe, ArrowUpRight, ShieldCheck, Cpu, HardDrive, GitCommit, Search, Map as MapIcon, Wifi, Share2, Radio, Binary, Box, BrainCircuit, TrendingUp } from 'lucide-react';
-import { mockApi } from '../api';
-import { SystemMetric, TopPath } from '../types';
+import { websocketApi } from '../api/websocketClient';
+import { SystemMetric } from '../types';
 
 const MetricCard = ({ title, value, unit, trend, icon: Icon, color, detail }: any) => (
     <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-lg p-5 relative overflow-hidden group hover:border-white/20 transition-all">
@@ -199,38 +199,26 @@ const NeuralTrafficGrid = () => {
 
 const Overview: React.FC = () => {
     const [data, setData] = useState<SystemMetric[]>([]);
-    const [topPaths, setTopPaths] = useState<TopPath[]>([]);
 
     useEffect(() => {
-        // Initial fetch
-        mockApi.getMetrics().then(setData);
-        mockApi.getTopPaths().then(setTopPaths);
-
-        // Real-time subscription
-        let unlisten: () => void;
-
-        const setupSubscription = async () => {
-            // @ts-ignore - Dynamic import or direct usage
-            const { tauriApi } = await import('../api/tauriClient'); // Lazy load to avoid cycle if any
-            unlisten = await tauriApi.subscribeToMetrics((metric: SystemMetric) => {
-                setData(prev => {
-                    const newPoint = {
-                        ...metric,
-                        // Ensure time is formatted if backend sends raw ISO or similar
-                        time: metric.time || new Date().toLocaleTimeString(),
-                    };
-                    // Keep window of 20 points
-                    const newData = [...prev, newPoint];
-                    if (newData.length > 20) newData.shift();
-                    return newData;
-                });
+        const handleMetric = (metric: any) => {
+            setData(prev => {
+                const newPoint = {
+                    time: new Date().toLocaleTimeString(),
+                    cpu: metric.cpu_usage,
+                    memory: metric.memory_usage / 1024 / 1024,
+                    latency: 0,
+                };
+                const newData = [...prev, newPoint];
+                if (newData.length > 20) newData.shift();
+                return newData;
             });
         };
 
-        setupSubscription();
+        websocketApi.subscribe('system_metrics', handleMetric);
 
         return () => {
-            if (unlisten) unlisten();
+            websocketApi.unsubscribe('system_metrics');
         };
     }, []);
 
@@ -269,8 +257,6 @@ const Overview: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard title="Processing Load" value={lastMetric.cpu.toFixed(1)} unit="%" trend="1.2%" icon={Activity} color="text-hive-orange" detail="CORE_POOL_8" />
                 <MetricCard title="Memory Residency" value={lastMetric.memory.toFixed(1)} unit="MB" trend="0.4%" icon={HardDrive} color="text-hive-cyan" detail="HEAP_NON_GC" />
-                <MetricCard title="Disk Usage" value={lastMetric.disk.toFixed(1)} unit="%" trend="0.1%" icon={HardDrive} color="text-purple-500" detail="STORAGE" />
-                <MetricCard title="Global Ingress" value="42.5" unit="k/s" trend="12%" icon={Globe} color="text-emerald-500" detail="NET_IO_SYNC" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -307,8 +293,8 @@ const Overview: React.FC = () => {
                                         contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', fontSize: '10px', fontFamily: 'monospace' }}
                                         itemStyle={{ padding: '2px 0' }}
                                     />
-                                    <Area type="monotone" dataKey="cpu" stroke="#f97316" strokeWidth={3} fill="url(#colorCpu)" animationDuration={1000} />
-                                    <Area type="monotone" dataKey="memory" stroke="#06b6d4" strokeWidth={3} fill="url(#colorMem)" animationDuration={1000} />
+                                    <Area type="monotone" dataKey="cpu" stroke="#f97316" strokeWidth={3} fill="url(#colorCpu)" animationDuration={1000} name="CPU (%)" />
+                                    <Area type="monotone" dataKey="memory" stroke="#06b6d4" strokeWidth={3} fill="url(#colorMem)" animationDuration={1000} name="Memory (MB)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>

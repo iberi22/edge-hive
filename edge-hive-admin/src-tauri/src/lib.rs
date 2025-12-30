@@ -141,6 +141,7 @@ pub fn run() {
             db_commands::db_execute,
             log_commands::get_logs,
             log_commands::add_log,
+            log_commands::stream_logs,
             // Functions
             function_commands::list_functions,
             function_commands::invoke_function,
@@ -163,6 +164,8 @@ pub fn run() {
             settings_commands::revoke_api_key,
             settings_commands::create_backup,
             settings_commands::get_backups,
+            settings_commands::get_config,
+            settings_commands::save_config,
             // Cloud
             // Cloud
             cloud_commands::get_instance_sizes,

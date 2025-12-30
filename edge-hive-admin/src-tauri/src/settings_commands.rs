@@ -6,13 +6,15 @@
 //! - SMTP configuration
 //! - Access logs
 
-use tauri::State;
+use tauri::{State, AppHandle};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 use std::sync::Arc;
+use tokio::fs as async_fs;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// API Key record
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -360,4 +362,35 @@ fn format_size(bytes: u64) -> String {
     } else {
         format!("{} B", bytes)
     }
+}
+
+#[tauri::command]
+pub async fn get_config(app_handle: AppHandle) -> Result<String, String> {
+    let config_path = app_handle.path().app_config_dir()
+        .ok_or_else(|| "Failed to resolve config directory".to_string())?
+        .join("config.toml");
+
+    let mut contents = String::new();
+    async_fs::File::open(config_path)
+        .await
+        .map_err(|e| e.to_string())?
+        .read_to_string(&mut contents)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(contents)
+}
+
+#[tauri::command]
+pub async fn save_config(app_handle: AppHandle, contents: String) -> Result<(), String> {
+    let config_path = app_handle.path().app_config_dir()
+        .ok_or_else(|| "Failed to resolve config directory".to_string())?
+        .join("config.toml");
+
+    async_fs::File::create(config_path)
+        .await
+        .map_err(|e| e.to_string())?
+        .write_all(contents.as_bytes())
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }

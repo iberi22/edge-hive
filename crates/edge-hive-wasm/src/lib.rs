@@ -4,6 +4,7 @@
 
 pub mod function;
 pub mod host;
+pub mod limits;
 pub mod prelude;
 pub mod runtime;
 

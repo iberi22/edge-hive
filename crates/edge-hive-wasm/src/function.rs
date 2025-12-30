@@ -3,11 +3,18 @@
 //! Provides high-level interface for loading and executing WASM edge functions.
 
 use crate::host::HostContext;
+use crate::limits::StoreLimits;
 use crate::WasmError;
 use serde_json::Value;
 use std::path::Path;
 use std::sync::Arc;
 use wasmtime::*;
+
+/// Wasmtime store data combining host context and resource limits
+struct StoreData<H: HostContext> {
+    host: Arc<H>,
+    limits: StoreLimits,
+}
 
 /// Represents a loaded edge function ready for execution
 pub struct EdgeFunction<H: HostContext> {
@@ -61,11 +68,23 @@ impl<H: HostContext> EdgeFunction<H> {
     /// # Returns
     /// JSON response from the function
     pub async fn execute(&self, request: Value) -> Result<Value, WasmError> {
-        // Create store with host context state
-        let mut store = Store::new(&self.engine, self.host.clone());
+        // Create store with host context and resource limits
+        let mut store = Store::new(
+            &self.engine,
+            StoreData {
+                host: self.host.clone(),
+                // 64MB memory limit, 100 tables
+                limits: StoreLimits::new(64 * 1024 * 1024, 100),
+            },
+        );
+
+        // Apply resource limits
+        store.limiter(|data| &mut data.limits);
 
         // Security: Add fuel for execution limit (approx 100ms of logic)
-        store.set_fuel(10_000_000).map_err(|e| WasmError::Wasmtime(e))?;
+        store
+            .set_fuel(10_000_000)
+            .map_err(|e| WasmError::Wasmtime(e))?;
 
         // Create linker with host functions
         let mut linker = Linker::new(&self.engine);
@@ -140,15 +159,15 @@ impl<H: HostContext> EdgeFunction<H> {
     }
 
     /// Link host functions to the linker
-    fn link_host_functions(&self, linker: &mut Linker<Arc<H>>) -> Result<(), WasmError> {
+    fn link_host_functions(&self, linker: &mut Linker<StoreData<H>>) -> Result<(), WasmError> {
         // db_query(sql_ptr: i32, sql_len: i32) -> result_ptr: i32
         linker
             .func_wrap_async(
                 "edge_hive",
                 "db_query",
-                |mut caller: Caller<'_, Arc<H>>, (sql_ptr, sql_len): (i32, i32)| {
+                |mut caller: Caller<'_, StoreData<H>>, (sql_ptr, sql_len): (i32, i32)| {
                     Box::new(async move {
-                        let host = caller.data().clone();
+                        let host = caller.data().host.clone();
 
                         // Read SQL from memory
                         let memory = caller
@@ -205,9 +224,9 @@ impl<H: HostContext> EdgeFunction<H> {
             .func_wrap_async(
                 "edge_hive",
                 "log",
-                |mut caller: Caller<'_, Arc<H>>, (level, msg_ptr, msg_len): (i32, i32, i32)| {
+                |mut caller: Caller<'_, StoreData<H>>, (level, msg_ptr, msg_len): (i32, i32, i32)| {
                     Box::new(async move {
-                        let host = caller.data().clone();
+                        let host = caller.data().host.clone();
 
                         // Read message from memory
                         let memory = caller

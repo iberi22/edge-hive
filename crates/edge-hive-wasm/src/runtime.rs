@@ -23,6 +23,7 @@ impl<H: HostContext> WasmRuntime<H> {
         config.wasm_bulk_memory(true);
         config.cranelift_opt_level(OptLevel::Speed);
         config.async_support(true);
+        config.consume_fuel(true); // Security: Limit CPU usage
 
         let engine = Engine::new(&config)
             .context("Failed to create Wasmtime engine")?;
@@ -40,7 +41,7 @@ impl<H: HostContext> WasmRuntime<H> {
     /// # Arguments
     /// * `path` - Path to the WASM file
     pub fn load_function(&self, path: &Path) -> Result<EdgeFunction<H>> {
-        EdgeFunction::load(path, self.host.clone())
+        EdgeFunction::load(&self.engine, path, self.host.clone())
             .map_err(|e| anyhow::anyhow!(e))
     }
 
@@ -49,7 +50,7 @@ impl<H: HostContext> WasmRuntime<H> {
     /// # Arguments
     /// * `bytes` - WASM module bytes
     pub fn load_function_from_bytes(&self, bytes: &[u8]) -> Result<EdgeFunction<H>> {
-        EdgeFunction::from_bytes(bytes, self.host.clone())
+        EdgeFunction::from_bytes(&self.engine, bytes, self.host.clone())
             .map_err(|e| anyhow::anyhow!(e))
     }
 

@@ -3,7 +3,7 @@
 //! These tests verify the complete functionality of the WASM runtime
 //! with real WASM modules.
 
-use edge_hive_wasm::{EdgeFunction, HostContext, LogLevel, WasmRuntime};
+use edge_hive_wasm::{HostContext, LogLevel, WasmRuntime};
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -95,7 +95,8 @@ async fn test_runtime_with_custom_host() {
 #[tokio::test]
 async fn test_invalid_wasm_bytes() {
     let host = Arc::new(TestHostContext::new());
-    
-    let result = EdgeFunction::from_bytes(&[0x00, 0x01, 0x02, 0x03], host);
+
+    let runtime = WasmRuntime::new(host.clone()).expect("Failed to create runtime");
+    let result = runtime.load_function_from_bytes(&[0x00, 0x01, 0x02, 0x03]);
     assert!(result.is_err());
 }

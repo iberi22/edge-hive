@@ -14,7 +14,7 @@ Write-Host ""
 
 # Check gh CLI
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ GitHub CLI (gh) not found" -ForegroundColor Red
+    Write-Host "ERROR: GitHub CLI (gh) not found" -ForegroundColor Red
     Write-Host "   Install: winget install GitHub.cli" -ForegroundColor Gray
     exit 1
 }
@@ -22,15 +22,15 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 # Check auth
 $authStatus = gh auth status 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Not authenticated with GitHub" -ForegroundColor Red
+    Write-Host "ERROR: Not authenticated with GitHub" -ForegroundColor Red
     Write-Host "   Run: gh auth login" -ForegroundColor Gray
     exit 1
 }
 
-$issuesDir = Join-Path $PSScriptRoot ".." ".github" "issues"
+$issuesDir = Join-Path $PSScriptRoot (Join-Path ".." (Join-Path ".github" "issues"))
 $files = Get-ChildItem -Path $issuesDir -Filter "$Filter.md"
 
-Write-Host "📂 Found $($files.Count) issue files" -ForegroundColor Cyan
+Write-Host "INFO: Found $($files.Count) issue files" -ForegroundColor Cyan
 Write-Host ""
 
 foreach ($file in $files) {
@@ -42,23 +42,23 @@ foreach ($file in $files) {
         $body = $content -replace "(?s)^---\r?\n.+?\r?\n---\r?\n", ""
 
         # Extract title
-        if ($frontmatter -match 'title:\s*["\x27]?([^"\x27\r\n]+)["\x27]?') {
+        if ($frontmatter -match 'title:\s*(?:["'']?)([^"''\r\n]+)(?:["'']?)') {
             $title = $matches[1]
         } else {
-            Write-Host "⚠️  Skipping $($file.Name): No title found" -ForegroundColor Yellow
+            Write-Host "WARN: Skipping $($file.Name): No title found" -ForegroundColor Yellow
             continue
         }
 
         # Extract labels
         $labels = @()
-        if ($frontmatter -match "(?s)labels:\s*\r?\n((?:\s*-\s*.+\r?\n?)+)") {
+        if ($frontmatter -match '(?s)labels:\s*\r?\n((?:\s*-\s*.+\r?\n?)+)') {
             $labelsBlock = $matches[1]
             $labels = $labelsBlock -split "`n" | ForEach-Object {
                 $_ -replace "^\s*-\s*", "" | ForEach-Object { $_.Trim() }
             } | Where-Object { $_ }
         }
 
-        Write-Host "📋 $title" -ForegroundColor Cyan
+        Write-Host "INFO: $title" -ForegroundColor Cyan
         Write-Host "   Labels: $($labels -join ', ')" -ForegroundColor Gray
 
         if ($DryRun) {
@@ -67,16 +67,17 @@ foreach ($file in $files) {
         }
 
         # Check if issue exists
-        $existingIssue = gh issue list --search "in:title `"$title`"" --json number,title 2>&1 | ConvertFrom-Json
+        $searchQuery = "in:title `"$title`""
+        $existingIssue = gh issue list --search $searchQuery --json number,title 2>&1 | ConvertFrom-Json
 
         if ($existingIssue -and $existingIssue.Count -gt 0) {
             $issueNum = $existingIssue[0].number
-            Write-Host "   Updating #$issueNum..." -ForegroundColor Gray
+            Write-Host "   Updating Issue $issueNum..." -ForegroundColor Gray
 
             $labelArgs = if ($labels) { "--add-label `"$($labels -join ',')`"" } else { "" }
             gh issue edit $issueNum --body $body $labelArgs
 
-            Write-Host "   ✅ Updated #$issueNum" -ForegroundColor Green
+            Write-Host "   SUCCESS: Updated Issue $issueNum" -ForegroundColor Green
         } else {
             Write-Host "   Creating new issue..." -ForegroundColor Gray
 
@@ -84,13 +85,13 @@ foreach ($file in $files) {
             $result = gh issue create --title $title --body $body $labelArgs 2>&1
 
             if ($result -match "#(\d+)") {
-                Write-Host "   ✅ Created #$($matches[1])" -ForegroundColor Green
+                Write-Host "   SUCCESS: Created Issue $($matches[1])" -ForegroundColor Green
             } else {
-                Write-Host "   ✅ Created" -ForegroundColor Green
+                Write-Host "   SUCCESS: Created" -ForegroundColor Green
             }
         }
     }
 }
 
 Write-Host ""
-Write-Host "✅ Sync complete!" -ForegroundColor Green
+Write-Host "SUCCESS: Sync complete!" -ForegroundColor Green

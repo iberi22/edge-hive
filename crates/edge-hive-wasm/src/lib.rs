@@ -72,7 +72,12 @@ impl Plugin {
         let mut store = Store::new(&engine, ());
 
         let module = Module::from_file(&engine, path)?;
-        let instance = Instance::new(&mut store, &module, &[])?;
+
+        // Linker is required for newer Wasmtime versions
+        let linker = Linker::new(&engine);
+        // If we had host functions (imports), we would define them here using the linker
+
+        let instance = linker.instantiate(&mut store, &module)?;
 
         // Try to get plugin info from exported function
         let info = Self::get_plugin_info(&mut store, &instance)

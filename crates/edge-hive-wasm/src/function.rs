@@ -20,19 +20,15 @@ impl<H: HostContext> EdgeFunction<H> {
     /// Load an edge function from a WASM file
     ///
     /// # Arguments
+    /// * `engine` - Shared Wasmtime engine
     /// * `path` - Path to the WASM file
     /// * `host` - Host context for database and logging
-    pub fn load(path: &Path, host: Arc<H>) -> Result<Self, WasmError> {
-        let mut config = Config::new();
-        config.async_support(true);
-        let engine = Engine::new(&config)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
-        
-        let module = Module::from_file(&engine, path)
+    pub fn load(engine: &Engine, path: &Path, host: Arc<H>) -> Result<Self, WasmError> {
+        let module = Module::from_file(engine, path)
             .map_err(|e| WasmError::Load(e.to_string()))?;
 
         Ok(Self {
-            engine,
+            engine: engine.clone(),
             module,
             host,
         })
@@ -41,21 +37,17 @@ impl<H: HostContext> EdgeFunction<H> {
     /// Load an edge function from WASM bytes
     ///
     /// # Arguments
+    /// * `engine` - Shared Wasmtime engine
     /// * `bytes` - WASM module bytes
     /// * `host` - Host context for database and logging
-    pub fn from_bytes(bytes: &[u8], host: Arc<H>) -> Result<Self, WasmError> {
+    pub fn from_bytes(engine: &Engine, bytes: &[u8], host: Arc<H>) -> Result<Self, WasmError> {
         crate::validate_wasm_bytes(bytes)?;
 
-        let mut config = Config::new();
-        config.async_support(true);
-        let engine = Engine::new(&config)
-            .map_err(|e| WasmError::Load(e.to_string()))?;
-        
-        let module = Module::new(&engine, bytes)
+        let module = Module::new(engine, bytes)
             .map_err(|e| WasmError::Load(e.to_string()))?;
 
         Ok(Self {
-            engine,
+            engine: engine.clone(),
             module,
             host,
         })
@@ -71,6 +63,9 @@ impl<H: HostContext> EdgeFunction<H> {
     pub async fn execute(&self, request: Value) -> Result<Value, WasmError> {
         // Create store with host context state
         let mut store = Store::new(&self.engine, self.host.clone());
+
+        // Security: Add fuel for execution limit (approx 100ms of logic)
+        store.set_fuel(10_000_000).map_err(|e| WasmError::Wasmtime(e))?;
 
         // Create linker with host functions
         let mut linker = Linker::new(&self.engine);
@@ -253,8 +248,9 @@ mod tests {
 
     #[test]
     fn test_edge_function_from_invalid_bytes() {
+        let engine = Engine::default();
         let host = Arc::new(NoOpHostContext);
-        let result = EdgeFunction::from_bytes(&[0x00, 0x01, 0x02], host);
+        let result = EdgeFunction::from_bytes(&engine, &[0x00, 0x01, 0x02], host);
         assert!(result.is_err());
     }
 }
